@@ -4,7 +4,7 @@
 
 Hookshot Adventure Launcher is a customizable **PyQt6 launcher and save manager for Hookshot**. Built with desktop Linux and Steam Deck-sized screens in mind, it brings game launching, multiple independent adventures, and a detailed view of your save progression into one streamlined interface.
 
-Choose an adventure, review your progress, manage your saves, and launch the game without digging through save folders or configuration files. Its Zelda-inspired visual themes, compact cards, and decoded inventory view put the adventure at the center of the experience.
+Choose an adventure, review your progress, manage your saves, and launch the game without digging through save folders or configuration files. Its game-inspired visual themes, compact cards, and decoded inventory view put the adventure at the center of the experience.
 
 > **Project status:** Active development / preview. This repository contains the **Python launcher, save-management UI, tests, and theme resources**—not the Hookshot native engine, compiler, shaders, copyrighted game data, or a prebuilt game. The installer/build pages require a compatible full Hookshot source checkout.
 
@@ -14,7 +14,7 @@ Choose an adventure, review your progress, manage your saves, and launch the gam
 - **Independent saves:** manage distinct adventures without overwriting the original save; managed profiles can be moved to recoverable trash with confirmation.
 - **Detailed progress viewer:** hearts, magic, wallet, spiritual stones, medallions, inventory, masks, equipment, trading quest, bags, and a 13-song grid (7 + 6).
 - **Authentic icon mappings:** references the local game's own icons where available; extracted game files and assets are **not** included in this repository.
-- **Customization:** seven theme styles, along with launch and shader/pipeline warm-up settings.
+- **Customization:** eight theme styles, along with launch and shader/pipeline warm-up settings.
 - **Desktop & handheld UI:** designed for compact windows and Steam Deck-oriented layouts, with a responsive Adventure Select page.
 - **Read-only save decoding:** display save information without editing gameplay saves. Some progression indicators are still being verified against real saves.
 
@@ -43,6 +43,23 @@ An integrated setup interface for connecting the launcher to a compatible native
 This screenshot shows an earlier save-management design. The current launcher removes the manual-details editor and derives supported progress information from the save automatically.
 
 ![Earlier save-management UI prototype](docs/screenshots/manage-saves-preview.png)
+
+## Themes
+
+Personalize the entire launcher with **eight built-in themes**. Each theme uses the same compact Adventure Select, profile manager, installer, and settings layouts. Switching themes does not change your game files or save data.
+
+| Theme | Look |
+| --- | --- |
+| **Darunia** | Charcoal, basalt, and ember-orange highlights |
+| **Gannon** | Dark plum with muted rose accents |
+| **Link** | Deep emerald green |
+| **Royal** | Rich, subdued purple |
+| **Ruto** | Cool crystal blue |
+| **Tri-force** | Antique gold and dark bronze |
+| **Zelda** | Blue-violet with soft pink accents |
+| **Ruby** | Deep garnet, crimson, and vivid ruby-magenta highlights |
+
+Select a theme from **Settings → Visual theme**. The selection persists across launcher sessions. Ruby is new in this preview and needs visual verification on desktop and Steam Deck-sized layouts.
 
 ## Requirements
 
