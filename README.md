@@ -2,6 +2,8 @@
 
 **Your adventure, your saves, your way.**
 
+**Current source version: v0.8 (preview)** · [Release notes](docs/RELEASE_NOTES.md)
+
 Hookshot Adventure Launcher is a customizable **PyQt6 launcher and save manager for Hookshot**. Built with desktop Linux and Steam Deck-sized screens in mind, it brings game launching, multiple independent adventures, and a detailed view of your save progression into one streamlined interface.
 
 Choose an adventure, review your progress, manage your saves, and launch the game without digging through save folders or configuration files. Its game-inspired visual themes, compact cards, and decoded inventory view put the adventure at the center of the experience.
