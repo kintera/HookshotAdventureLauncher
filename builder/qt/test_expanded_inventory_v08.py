@@ -97,7 +97,7 @@ class ExpandedInventoryTests(unittest.TestCase):
         self.assertEqual(stats['bottle_slots'][0]['role'],'bottle_fairy')
 
     def test_all_seven_themes_get_global_gradients(self):
-        self.assertEqual(len(THEMES),7)
+        self.assertEqual(len(THEMES),8)
         for key, _label, _qss in THEMES:
             qss=stylesheet_for(key)
             self.assertIn('QWidget#launcherRoot',qss)
