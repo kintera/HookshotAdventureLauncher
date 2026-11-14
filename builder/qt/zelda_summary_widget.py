@@ -70,7 +70,7 @@ assert len(SONG_ITEMS) == 13
 
 ACCENT = {
     'purple': '#caa0ff', 'zelda': '#6bcf8d', 'zelda_gold': '#dec270',
-    'blue_crystal': '#91d8ff', 'gannon': '#f58b97', 'ruby': '#ff67af',
+    'blue_crystal': '#91d8ff', 'gannon': '#f58b97', 'ruby': '#ff6670',
     'zelda_pearl': '#ecb0d2', 'goron': '#ff914b',
 }
 
