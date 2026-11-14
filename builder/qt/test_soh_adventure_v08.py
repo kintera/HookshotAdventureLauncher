@@ -139,7 +139,7 @@ class SoHSourceContracts(unittest.TestCase):
         self.assertNotIn('mapped_icon_path', (HERE/'zelda_icon_assets.py').read_text())
 
     def test_all_seven_theme_panels(self):
-        self.assertEqual(len(THEMES),7)
+        self.assertEqual(len(THEMES),8)
         for _key,label,_file in THEMES:
             css=selected_save_info_qss(label)
             self.assertIn('qlineargradient',css)
