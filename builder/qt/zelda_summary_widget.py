@@ -527,7 +527,7 @@ class ZeldaStatsWidget(QWidget):
         raw = getattr(self, 'raw_stats', {})
         theme_label = {'purple': 'royal', 'zelda': 'link',
                        'zelda_gold': 'tri force', 'blue_crystal': 'ruto',
-                       'gannon': 'gannon', 'zelda_pearl': 'zelda',
+                       'gannon': 'gannon', 'ruby': 'ruby', 'zelda_pearl': 'zelda',
                        'goron': 'darunia'}.get(selected_theme(), 'royal')
         palette = resolve_theme_colors(theme_label)
         pearl = False  # Zelda now uses deep royal-violet panels, not pale ivory ones
