@@ -1,0 +1,140 @@
+/* Hookshot - Tri-force: deep gold, black-amber and vivid gilded highlights */
+/* Hookshot — Zelda Vaporwave · emerald and gold, compact responsive desktop UI.
+   Dark emerald, antique gold gradients, vaporwave magenta tabs and neon aqua focus,
+   readable gold highlights, mint ready signals. All surfaces use the same palette. */
+QWidget {
+    background: #191207;
+    color: #fff3d8;
+    font-family: "Noto Sans", "Segoe UI", sans-serif;
+    font-size: 12px;
+}
+QMainWindow, QDialog, QMessageBox { background: #191207; }
+QLabel { background: transparent; }
+QLabel#heading { color: #aaf6d0; font-size: 17px; font-weight: 800; letter-spacing: 1px; }
+QLabel#subheading, QLabel#muted { color: #f0ce79; font-size: 11px; }
+QLabel#stepStatus { color: #92f3c2; background: #403312; border: 1px solid #b89334;
+                    border-radius: 6px; padding: 5px 8px; font-weight: 700; }
+QLabel#hint { color: #f6e0aa; font-size: 11px; padding: 6px;
+              background: #332910; border: 1px solid #8d7028; border-radius: 6px; }
+QLabel#brandMark { background: #483914; border: 1px solid #33b775; border-radius: 8px; padding: 2px; }
+QLabel#stepTitle { color: #bcf8da; font-size: 15px; font-weight: 700; }
+QLabel#stageTitle { color: #f8e8c1; font-size: 12px; font-weight: 700; }
+QLabel#stepNumber { color: #aaf6d0; background: #614d1b; border: 1px solid #49eb9a;
+                    border-radius: 16px; font-size: 13px; font-weight: 800; }
+QLabel#readyTitle { color: #aaf6d0; font-size: 20px; font-weight: 800; letter-spacing: 1px; }
+QLabel#readyCaption { color: #f4da9a; font-size: 12px; }
+QLabel#tag, QPushButton#settingsHeaderTag { color: #f6e3b2; background: #423412; border: 1px solid #9e7e2c;
+             border-radius: 6px; padding: 4px 7px; font-size: 10px; font-weight: 700; }
+QLabel#tag[status="success"] { color: #f2d68d; background: #473914; border-color: #bc9635; }
+QLabel#tag[status="warning"] { color: #99f4c7; background: #175034; border-color: #30a96d; }
+QFrame#stepCard, QFrame#panel { background: #34260f; border: 1px solid #7d6323; border-radius: 9px; }
+QFrame#rule { color: #715a20; background: #715a20; border: 0; max-height: 1px; }
+QFrame#footer { background: #372c11; border: 1px solid #96772a; border-radius: 8px; }
+QFrame#statTile, QFrame#statPanel { background: #473418; border: 1px solid #9b7c2c; border-radius: 7px; }
+QFrame#card { background: #392e12; border: 1px solid #8c6f27; border-radius: 8px; }
+QScrollArea { background: transparent; border: 0; }
+QScrollArea > QWidget > QWidget, QWidget#scrollBody { background: #34260f; }
+QTabWidget::pane { border: 1px solid #856a25; border-radius: 7px; background: #281e0b; }
+QTabBar::tab { color: #f4dca0; background: #56401e; padding: 7px 13px;
+               margin-right: 2px; border: 1px solid #927429; border-bottom: 0; }
+QTabBar::tab:selected { color: #a4f5cd; background: #66511d; border-bottom: 2px solid #58e6ac; }
+QTabBar::tab:hover { color: #cffae4; background: #775f22; }
+QLineEdit, QComboBox, QSpinBox, QPlainTextEdit {
+    background: #221c0b; color: #fbf2dc; border: 1px solid #a98730;
+    border-radius: 5px; padding: 5px; selection-background-color: #a1802d;
+}
+QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QPlainTextEdit:focus { border: 1px solid #eec868; }
+QLineEdit:disabled, QComboBox:disabled, QSpinBox:disabled { color: #ebbd4a; }
+QComboBox::drop-down { border: 0; width: 24px; }
+QComboBox QAbstractItemView { background: #3d3113; color: #d7fbe9; selection-background-color: #7e6524; }
+QSpinBox { min-width: 55px; }
+QPushButton { color: #d1fae6; background: #584619; border: 1px solid #e7b024;
+              border-radius: 6px; padding: 6px 11px; font-weight: 650; }
+QPushButton:hover { background: #786022; border-color: #8ef2b9; }
+QPushButton:pressed { background: #65501c; }
+QPushButton:disabled { background: #453713; color: #e9b634; border-color: #715a20; }
+QPushButton#primaryButton, QPushButton#primary {
+    color: #081b12;
+    background: qlineargradient(x1:0,y1:0,x2:1,y2:0,stop:0 #177a54,stop:1 #73c66e);
+    border: 1px solid #dbbd65; font-weight: 800;
+}
+QPushButton#primaryButton:hover, QPushButton#primary:hover {
+    background: qlineargradient(x1:0,y1:0,x2:1,y2:0,stop:0 #90f3c2,stop:1 #f0cf7a);
+}
+QPushButton#secondaryButton { background: #534218; border-color: #ba9435; }
+QPushButton#profileCard { text-align: left; padding: 6px 9px;
+    background: #423412; border: 1px solid #9a7b2c; border-radius: 7px; }
+QPushButton#profileCard:hover { background: #624e1c; }
+QPushButton#profileCard[active="true"] { background: #66511d; border: 2px solid #78f0b4; }
+QCheckBox { background: transparent; spacing: 6px; padding: 1px; }
+QCheckBox::indicator { width: 15px; height: 15px; border: 1px solid #eaba41;
+                       border-radius: 3px; background: #2d240e; }
+QCheckBox::indicator:checked { background: #e8b533; border-color: #94f3c4; }
+QProgressBar { background: #221c0b; border: 1px solid #876b26; border-radius: 5px;
+               color: #8ff3c1; min-height: 16px; max-height: 20px; text-align: center;
+               font-weight: 800; }
+QProgressBar::chunk { background: qlineargradient(x1:0,y1:0,x2:1,y2:0,
+                     stop:0 #ac8930, stop:1 #59eda3); border-radius: 4px; }
+QPlainTextEdit { font-family: "JetBrains Mono", "DejaVu Sans Mono", monospace; font-size: 10px; }
+QPlainTextEdit#summaryText { background: #392e12; color: #f7e4b4; border: 1px solid #a1812e; }
+QStatusBar { color: #f0cf7c; background: #211607; }
+QScrollBar:vertical { background: #241d0c; width: 9px; border: 0; }
+QScrollBar::handle:vertical { background: #a1812e; border-radius: 4px; min-height: 24px; }
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }
+QLabel#launchHealth { color: #f2d386; background: #423513; border: 1px solid #9f7f2d;
+                      border-radius: 6px; padding: 8px; font-size: 12px; font-weight: 700; }
+QLabel#launchHealth[status="success"] { color: #f2d386; background: #4e3e16; border-color: #af8b31; }
+QLabel#launchHealth[status="warning"] { color: #aaf6d0; background: #175034; border-color: #2fa56a; }
+QLabel#statCaption, QLabel#kicker { color: #aaf6ca; font-size: 10px; font-weight: 700; }
+QLabel#statValue, QLabel#largeStat { color: #ffe6a2; font-size: 15px; font-weight: 800; }
+QLabel#statDetail, QLabel#subtle { color: #f1d17f; font-size: 10px; }
+QLabel#title { color: #a7f5ce; font-size: 18px; font-weight: 800; }
+QLabel#profileTitle { color: #b8f7d8; font-size: 17px; font-weight: 700; }
+QLabel#hearts { color: #94f3bd; font-size: 15px; letter-spacing: 1px; }
+QLabel#emptyText { color: #edc55e; font-style: italic; }
+QLabel#warning { color: #9cf4c8; background: #185637; border: 1px solid #2fa56a;
+                 border-radius: 6px; padding: 6px; }
+QToolTip { background: #534217; color: #b7f7d7; border: 1px solid #8ef2ba; padding: 4px; }
+QDialogButtonBox QPushButton { min-width: 76px; }
+
+/* Zelda's warm gold / neon aqua / vapor-fuchsia highlights intentionally coexist. */
+QTabBar::tab:selected { border-bottom: 2px solid #43e4a4; }
+QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QPlainTextEdit:focus { border: 1px solid #f0cf7a; }
+QPushButton#primary:hover, QPushButton#primaryButton:hover { border-color: #bcf8da; }
+
+/* Adventure Select v0.7: compact cards with a dedicated Select button. */
+QFrame#profileCardFrame {
+    background: rgba(73, 74, 100, 0.23); border: 1px solid rgba(172, 184, 208, 0.35);
+    border-radius: 7px; }
+QLabel#tag[status="error"], QLabel#launchHealth[status="error"] {
+    color: #ff899c; background: #401923; border: 1px solid #d24c69; }
+
+/* Tri-state installation readiness: meaning is consistent in every theme. */
+QLabel#stepStatus[status="success"], QLabel#tag[status="success"], QLabel#launchHealth[status="success"] {
+    color: #80f4bd; background: #113d30; border: 1px solid #38b984; }
+QLabel#stepStatus[status="warning"], QLabel#tag[status="warning"], QLabel#launchHealth[status="warning"] {
+    color: #ffe18d; background: #463716; border: 1px solid #c09a42; }
+QLabel#stepStatus[status="error"], QLabel#tag[status="error"], QLabel#launchHealth[status="error"] {
+    color: #ff899c; background: #401923; border: 1px solid #d24c69; }
+
+/* Adventure v0.8 - richer Tri-force gold (preserves status colors). */
+QLabel#heading, QLabel#stepTitle, QLabel#readyTitle,
+QLabel#title, QLabel#profileTitle, QLabel#statCaption, QLabel#kicker {
+    color:#f5c649;
+}
+QFrame#stepCard, QFrame#panel, QFrame#card, QFrame#profileCardFrame {
+    border-color:#af832a;
+}
+QLabel#stepNumber, QTabBar::tab:selected {
+    color:#ffdc75; border-color:#d7a12b;
+}
+QPushButton#primaryButton, QPushButton#primary {
+    color:#201303;
+    background:qlineargradient(x1:0,y1:0,x2:1,y2:0,stop:0 #a77413,stop:0.48 #efbd3e,stop:1 #ffd770);
+    border:1px solid #e5b73f;
+}
+QPushButton#primaryButton:hover, QPushButton#primary:hover {
+    background:qlineargradient(x1:0,y1:0,x2:1,y2:0,stop:0 #c89422,stop:1 #ffe49b);
+    border-color:#ffde80;
+}
+QProgressBar::chunk {background:qlineargradient(x1:0,y1:0,x2:1,y2:0,stop:0 #a36c10,stop:1 #f2c24a);}

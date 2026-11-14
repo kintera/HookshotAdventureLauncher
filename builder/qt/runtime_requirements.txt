@@ -1,0 +1,5 @@
+# Launcher only. The asset browser is not a release dependency.
+PyQt6>=6.5
+Pillow>=10.0
+zstandard>=0.22
+texture2ddecoder==1.0.6

@@ -1,0 +1,27 @@
+# Local environment and generated files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+builder/qt/.local-python/
+*.egg-info/
+dist/
+build/
+work/
+.cache/
+# Game assets, saves, and user data
+*.sav
+*.nsp
+*.xci
+*.nca
+*.romfs
+*.bntx
+*.bntx.zs
+romfs/
+game/
+userdata/
+# Extracted asset cache
+builder/qt/assets/game_icons/*.png
+builder/qt/assets/game_icons/*.webp
+!builder/qt/assets/game_icons/README.txt

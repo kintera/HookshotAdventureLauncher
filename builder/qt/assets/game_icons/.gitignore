@@ -1,0 +1,15 @@
+# The reviewed extraction manifest is source metadata and MAY be shipped.
+!icon_manifest.json
+
+# Never distribute game-derived artwork, thumbnail caches or local backups.
+*.png
+*.webp
+*.jpg
+*.jpeg
+*.bmp
+*.dds
+*.ktx
+*.bntx
+*.zs
+*.backup-*.json
+*.tmp

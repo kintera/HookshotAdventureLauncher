@@ -1,0 +1,118 @@
+/* Hookshot - N64 Blue Crystal: sapphire crystal and silver */
+/* Hookshot — Zelda Vaporwave · emerald and gold, compact responsive desktop UI.
+   Dark emerald, antique gold gradients, vaporwave magenta tabs and neon aqua focus,
+   readable gold highlights, mint ready signals. All surfaces use the same palette. */
+QWidget {
+    background: #071325;
+    color: #f0f8ff;
+    font-family: "Noto Sans", "Segoe UI", sans-serif;
+    font-size: 12px;
+}
+QMainWindow, QDialog, QMessageBox { background: #071325; }
+QLabel { background: transparent; }
+QLabel#heading { color: #afe3f0; font-size: 17px; font-weight: 800; letter-spacing: 1px; }
+QLabel#subheading, QLabel#muted { color: #82b1e7; font-size: 11px; }
+QLabel#stepStatus { color: #99dbec; background: #102742; border: 1px solid #2d71bf;
+                    border-radius: 6px; padding: 5px 8px; font-weight: 700; }
+QLabel#hint { color: #b0cef0; font-size: 11px; padding: 6px;
+              background: #102033; border: 1px solid #225793; border-radius: 6px; }
+QLabel#brandMark { background: #112c4b; border: 1px solid #2ca1be; border-radius: 8px; padding: 2px; }
+QLabel#stepTitle { color: #c0e9f3; font-size: 15px; font-weight: 700; }
+QLabel#stageTitle { color: #c5dbf4; font-size: 12px; font-weight: 700; }
+QLabel#stepNumber { color: #afe3f0; background: #183b64; border: 1px solid #55c3df;
+                    border-radius: 16px; font-size: 13px; font-weight: 800; }
+QLabel#readyTitle { color: #b0e3f0; font-size: 20px; font-weight: 800; letter-spacing: 1px; }
+QLabel#readyCaption { color: #a1c4ed; font-size: 12px; }
+QLabel#tag, QPushButton#settingsHeaderTag { color: #b8d3f1; background: #102844; border: 1px solid #2661a4;
+             border-radius: 6px; padding: 4px 7px; font-size: 10px; font-weight: 700; }
+QLabel#tag[status="success"] { color: #94bdeb; background: #112c4a; border-color: #2e74c3; }
+QLabel#tag[status="warning"] { color: #a0deed; background: #144753; border-color: #2995b0; }
+QFrame#stepCard, QFrame#panel { background: #152d50; border: 1px solid #1e4d82; border-radius: 9px; }
+QFrame#rule { color: #1c4675; background: #1c4675; border: 0; max-height: 1px; }
+QFrame#footer { background: #112337; border: 1px solid #245c9c; border-radius: 8px; }
+QFrame#statTile, QFrame#statPanel { background: #233e68; border: 1px solid #265fa1; border-radius: 7px; }
+QFrame#card { background: #122439; border: 1px solid #225691; border-radius: 8px; }
+QScrollArea { background: transparent; border: 0; }
+QScrollArea > QWidget > QWidget, QWidget#scrollBody { background: #152d50; }
+QTabWidget::pane { border: 1px solid #20518a; border-radius: 7px; background: #112745; }
+QTabBar::tab { color: #a6c8ee; background: #1b4168; padding: 7px 13px;
+               margin-right: 2px; border: 1px solid #245a97; border-bottom: 0; }
+QTabBar::tab:selected { color: #aae1ef; background: #193f6a; border-bottom: 2px solid #b9c0fb; }
+QTabBar::tab:hover { color: #d2eff7; background: #1d497c; }
+QLineEdit, QComboBox, QSpinBox, QPlainTextEdit {
+    background: #0b1622; color: #deebf9; border: 1px solid #2968b0;
+    border-radius: 5px; padding: 5px; selection-background-color: #2763a7;
+}
+QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QPlainTextEdit:focus { border: 1px solid #72a7e4; }
+QLineEdit:disabled, QComboBox:disabled, QSpinBox:disabled { color: #5696df; }
+QComboBox::drop-down { border: 0; width: 24px; }
+QComboBox QAbstractItemView { background: #13273d; color: #daf2f8; selection-background-color: #1f4e83; }
+QSpinBox { min-width: 55px; }
+QPushButton { color: #d4f0f7; background: #15365c; border: 1px solid #3380d8;
+              border-radius: 6px; padding: 6px 11px; font-weight: 650; }
+QPushButton:hover { background: #1d4a7d; border-color: #af95eb; }
+QPushButton:pressed { background: #193e68; }
+QPushButton:disabled { background: #112a47; color: #4289db; border-color: #1c4675; }
+QPushButton#primaryButton, QPushButton#primary {
+    color: #091b35;
+    background: qlineargradient(x1:0,y1:0,x2:1,y2:0,stop:0 #407dc1,stop:1 #a0e0fa);
+    border: 1px solid #cdeeff; font-weight: 800;
+}
+QPushButton#primaryButton:hover, QPushButton#primary:hover {
+    background: qlineargradient(x1:0,y1:0,x2:1,y2:0,stop:0 #98dbeb,stop:1 #83b2e7);
+}
+QPushButton#secondaryButton { background: #143357; border-color: #2d73c2; }
+QPushButton#profileCard { text-align: left; padding: 6px 9px;
+    background: #102844; border: 1px solid #265fa0; border-radius: 7px; }
+QPushButton#profileCard:hover { background: #183c65; }
+QPushButton#profileCard[active="true"] { background: #193f6a; border: 2px solid #81d3e7; }
+QCheckBox { background: transparent; spacing: 6px; padding: 1px; }
+QCheckBox::indicator { width: 15px; height: 15px; border: 1px solid #4e91dd;
+                       border-radius: 3px; background: #0e1c2d; }
+QCheckBox::indicator:checked { background: #4088db; border-color: #9bdcec; }
+QProgressBar { background: #0b1622; border: 1px solid #21538c; border-radius: 5px;
+               color: #97daeb; min-height: 16px; max-height: 20px; text-align: center;
+               font-weight: 800; }
+QProgressBar::chunk { background: qlineargradient(x1:0,y1:0,x2:1,y2:0,
+                     stop:0 #2a69b2, stop:1 #64c9e2); border-radius: 4px; }
+QPlainTextEdit { font-family: "JetBrains Mono", "DejaVu Sans Mono", monospace; font-size: 10px; }
+QPlainTextEdit#summaryText { background: #122439; color: #b9d4f2; border: 1px solid #2763a8; }
+QStatusBar { color: #84b3e8; background: #08182b; }
+QScrollBar:vertical { background: #0c1724; width: 9px; border: 0; }
+QScrollBar::handle:vertical { background: #2763a8; border-radius: 4px; min-height: 24px; }
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }
+QLabel#launchHealth { color: #8eb9ea; background: #102945; border: 1px solid #2762a5;
+                      border-radius: 6px; padding: 8px; font-size: 12px; font-weight: 700; }
+QLabel#launchHealth[status="success"] { color: #8eb8e9; background: #133051; border-color: #2b6bb5; }
+QLabel#launchHealth[status="warning"] { color: #afe3f0; background: #144753; border-color: #2891ac; }
+QLabel#statCaption, QLabel#kicker { color: #c3aff0; font-size: 10px; font-weight: 700; }
+QLabel#statValue, QLabel#largeStat { color: #dcf4ff; font-size: 15px; font-weight: 800; }
+QLabel#statDetail, QLabel#subtle { color: #88b5e8; font-size: 10px; }
+QLabel#title { color: #ade2ef; font-size: 18px; font-weight: 800; }
+QLabel#profileTitle { color: #bde8f2; font-size: 17px; font-weight: 700; }
+QLabel#hearts { color: #b39bec; font-size: 15px; letter-spacing: 1px; }
+QLabel#emptyText { color: #69a1e2; font-style: italic; }
+QLabel#warning { color: #a3deed; background: #154b59; border: 1px solid #2891ac;
+                 border-radius: 6px; padding: 6px; }
+QToolTip { background: #143356; color: #bce7f2; border: 1px solid #b096eb; padding: 4px; }
+QDialogButtonBox QPushButton { min-width: 76px; }
+
+/* Zelda's warm gold / neon aqua / vapor-fuchsia highlights intentionally coexist. */
+QTabBar::tab:selected { border-bottom: 2px solid #b2befc; }
+QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QPlainTextEdit:focus { border: 1px solid #83b2e7; }
+QPushButton#primary:hover, QPushButton#primaryButton:hover { border-color: #c0e9f3; }
+
+/* Adventure Select v0.7: compact cards with a dedicated Select button. */
+QFrame#profileCardFrame {
+    background: rgba(73, 74, 100, 0.23); border: 1px solid rgba(172, 184, 208, 0.35);
+    border-radius: 7px; }
+QLabel#tag[status="error"], QLabel#launchHealth[status="error"] {
+    color: #ff899c; background: #401923; border: 1px solid #d24c69; }
+
+/* Tri-state installation readiness: meaning is consistent in every theme. */
+QLabel#stepStatus[status="success"], QLabel#tag[status="success"], QLabel#launchHealth[status="success"] {
+    color: #80f4bd; background: #113d30; border: 1px solid #38b984; }
+QLabel#stepStatus[status="warning"], QLabel#tag[status="warning"], QLabel#launchHealth[status="warning"] {
+    color: #ffe18d; background: #463716; border: 1px solid #c09a42; }
+QLabel#stepStatus[status="error"], QLabel#tag[status="error"], QLabel#launchHealth[status="error"] {
+    color: #ff899c; background: #401923; border: 1px solid #d24c69; }
