@@ -12,7 +12,7 @@ HERE = Path(__file__).parent
 
 class ThemeAwareHoverTests(unittest.TestCase):
     def test_all_seven_themes_have_distinct_tooltip_chrome(self):
-        self.assertEqual(len(THEMES), 7)
+        self.assertEqual(len(THEMES), 8)
         styles = {}
         for theme, _label, _qss in THEMES:
             qss = adventure_tooltip_qss(theme)
@@ -24,7 +24,7 @@ class ThemeAwareHoverTests(unittest.TestCase):
             self.assertIn('QToolTip {', stylesheet_for(theme))
             self.assertTrue(stylesheet_for(theme).endswith(qss))
             styles[theme] = qss
-        self.assertEqual(len(set(styles.values())), 7)
+        self.assertEqual(len(set(styles.values())), 8)
         self.assertEqual(set(SURFACE_COLORS), set(styles))
 
     def test_tooltips_update_with_theme_selection(self):
