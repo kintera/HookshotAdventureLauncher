@@ -9,7 +9,7 @@ class UniformFrameV08Tests(unittest.TestCase):
         labels = [label for _, label in theme_labels()]
         self.assertEqual(labels, sorted(labels, key=str.casefold))
         self.assertEqual(set(key for key, _, _ in THEMES),
-            {'goron','gannon','zelda','purple','blue_crystal','zelda_gold','zelda_pearl'})
+            {'goron','gannon','zelda','purple','ruby','blue_crystal','zelda_gold','zelda_pearl'})
         self.assertEqual(dict(theme_labels())['goron'], 'Darunia')
         self.assertEqual(resolve_theme_colors('Darunia'), resolve_theme_colors('Goron'))
 
