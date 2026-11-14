@@ -11,7 +11,7 @@ HERE=Path(__file__).resolve().parent
 class ZeldaThemeV08Tests(unittest.TestCase):
     def test_stable_internal_keys_and_visible_names(self):
         self.assertEqual(tuple(k for k,_,_ in THEMES),
-                         ('goron','gannon','zelda','purple','blue_crystal','zelda_gold','zelda_pearl'))
+                         ('goron','gannon','zelda','purple','ruby','blue_crystal','zelda_gold','zelda_pearl'))
         labels=dict(theme_labels())
         self.assertEqual(labels['zelda'],'Link')
         self.assertEqual(labels['zelda_gold'],'Tri-force')
@@ -24,8 +24,8 @@ class ZeldaThemeV08Tests(unittest.TestCase):
         self.assertEqual(normalized_theme('zelda_pearl'),'zelda_pearl')
 
     def test_all_seven_themes_include_global_gradient_for_main_settings_and_details(self):
-        self.assertEqual(len(THEMES),7)
-        self.assertEqual(len(SURFACE_COLORS),7)
+        self.assertEqual(len(THEMES),8)
+        self.assertEqual(len(SURFACE_COLORS),8)
         for key,label,filename in THEMES:
             self.assertTrue((HERE/filename).is_file())
             css=stylesheet_for(key)
@@ -57,7 +57,7 @@ class ZeldaThemeV08Tests(unittest.TestCase):
         self.assertIn("'zelda_pearl': 'zelda'",renderer)
         self.assertIn("'zelda_pearl':'zelda'",launcher)
         self.assertIn("'goron':'darunia'",launcher)
-        self.assertIn('Seven themes; changes apply',launcher)
+        self.assertIn('Eight themes; changes apply',launcher)
         self.assertIn('self.manual_save_backup_button',launcher)
         self.assertIn('Business', (HERE/'save_reader.py').read_text() +
                       (HERE/'adventure_panel_model.py').read_text().replace('business_scrub_seed','Business'))
