@@ -4,19 +4,19 @@ import unittest
 from ui_theme import THEMES, SURFACE_COLORS, theme_labels, stylesheet_for, normalized_theme
 from adventure_v08_settings_ui import resolve_theme_colors
 HERE=Path(__file__).resolve().parent
-EXPECTED=(('goron','Darunia'),('gannon','Gannon'),('zelda','Link'),('purple','Royal'),
+EXPECTED=(('goron','Darunia'),('gannon','Gannon'),('zelda','Link'),('purple','Royal'),('ruby','Ruby'),
           ('blue_crystal','Ruto'),('zelda_gold','Tri-force'),('zelda_pearl','Zelda'))
 class SevenThemeTests(unittest.TestCase):
     def test_stable_existing_ids_and_labels(self):
         self.assertEqual(theme_labels(),EXPECTED)
-        self.assertEqual(len(THEMES),7)
-        self.assertEqual(len(SURFACE_COLORS),7)
+        self.assertEqual(len(THEMES),8)
+        self.assertEqual(len(SURFACE_COLORS),8)
         for key,label in EXPECTED:
             self.assertEqual(normalized_theme(key),key)
             self.assertIsNotNone(resolve_theme_colors(label))
         self.assertEqual(normalized_theme('invalid'),'purple')
     def test_distinct_surfaces_and_goron_palettes(self):
-        self.assertEqual(len(set(SURFACE_COLORS.values())),7)
+        self.assertEqual(len(set(SURFACE_COLORS.values())),8)
         self.assertIn('#f5c649',stylesheet_for('zelda_gold'))
         goron=stylesheet_for('goron')
         self.assertIn('#101114',goron)
