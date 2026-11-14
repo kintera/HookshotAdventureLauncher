@@ -348,8 +348,8 @@ def stylesheet_for(theme: str) -> str:
             + shared_gradient_qss(current)
             + adventure_menu_qss(current)
             + raised_button_qss(current)
-            + adventure_tooltip_qss(current)
-            + (ruby_finish_qss() if current == 'ruby' else ''))
+            + (ruby_finish_qss() if current == 'ruby' else '')
+            + adventure_tooltip_qss(current))
 
 
 def selected_theme() -> str:
