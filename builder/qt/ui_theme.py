@@ -11,9 +11,9 @@ from pathlib import Path
 THEMES = (
     ('goron', 'Darunia', 'hookshot_goron.qss'),
     ('gannon', 'Gannon', 'hookshot_gannon.qss'),
-    ('ruby', 'Ruby', 'hookshot_ruby.qss'),
     ('zelda', 'Link', 'hookshot_zelda_vaporwave.qss'),
     ('purple', 'Royal', 'hookshot_theme.qss'),
+    ('ruby', 'Ruby', 'hookshot_ruby.qss'),
     ('blue_crystal', 'Ruto', 'hookshot_n64_blue_crystal.qss'),
     ('zelda_gold', 'Tri-force', 'hookshot_zelda_gold.qss'),
     ('zelda_pearl', 'Zelda', 'hookshot_zelda_pearl.qss'),
