@@ -22,6 +22,8 @@ Choose an adventure, review your progress, manage your saves, and launch the gam
 
 ## Themes
 
+![Eight Hookshot Adventure Launcher themes](docs/screenshots/themes-showcase.png)
+
 Personalize the entire launcher with **eight built-in themes**. Each theme uses the same compact Adventure Select, profile manager, installer, and settings layouts. Switching themes does not change your game files or save data.
 
 | Theme | Look |
