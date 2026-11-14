@@ -70,7 +70,9 @@ def shared_gradient_qss(theme: str) -> str:
     # All eight palettes share exactly the same outline geometry. This avoids
     # boxed text and oversized gilded rails in Zelda/Darunia; only hues vary.
     outline = rim
-    return (f"\n/* Adventure v0.8: unified low-contrast outline geometry. */\n"
+    return (f"\n/* Make unstyled layout wrappers transparent, matching Darunia. */\n"
+            f"QWidget {{ background:transparent; }}\n"
+            f"/* Adventure v0.8: unified low-contrast outline geometry. */\n"
             f"QWidget#launcherRoot, QWidget#launcherSettingsPage, QWidget#launcherAdventurePage, "
             f"QWidget#launcherDetailPage {{ background: {chrome}; }}\n"
             f"QFrame#stepCard, QFrame#panel, QFrame#card, QFrame#statTile, "
