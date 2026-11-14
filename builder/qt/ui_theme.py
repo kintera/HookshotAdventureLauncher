@@ -38,7 +38,7 @@ SURFACE_COLORS = {
     'zelda_gold': ('#3c2b13', '#64481c', '#17120b', '#b38626'),
     'blue_crystal': ('#1c334d', '#314d69', '#101a30', '#5682ae'),
     'gannon': ('#35232f', '#563440', '#191018', '#8a4854'),
-    'ruby': ('#3e0d2b', '#7a174c', '#150713', '#d32775'),
+    'ruby': ('#390911', '#a51a35', '#140407', '#fa3c55'),
     'zelda_pearl': ('#30275e', '#4b4b8b', '#11152f', '#ca9a70'),
     'goron': ('#18191c', '#3d3430', '#09090c', '#e05b28'),
 }
@@ -276,6 +276,71 @@ def adventure_tooltip_qss(theme: str) -> str:
             "font-size:12px; font-weight:600; }\n")
 
 
+def ruby_finish_qss() -> str:
+    """Ruby's neon-crimson finish, applied last so shared surfaces cannot flatten it.
+
+    Visual reference: saturated scarlet frame, raised wine-red cards and deep
+    black-cherry recesses. Only Ruby receives this styling.
+    """
+    return """
+/* Ruby showcase finish: luminous scarlet edges over deep garnet. */
+QWidget#launcherRoot {
+    background:qlineargradient(x1:0,y1:0,x2:1,y2:1,
+        stop:0 #30050f,stop:0.28 #3f0714,stop:0.66 #160309,stop:1 #6b0a26);
+    border:1px solid #eb2e4c;
+    border-radius:12px;
+}
+QWidget#launcherAdventurePage {
+    background:qlineargradient(x1:0,y1:0,x2:1,y2:1,
+        stop:0 #29040d,stop:0.48 #1c0309,stop:0.82 #390713,stop:1 #670d2a);
+    border:none;
+}
+QWidget#adventureList { background:transparent; border:none; }
+QFrame#profileCardFrame {
+    background:qlineargradient(x1:0,y1:0,x2:0,y2:1,
+        stop:0 #a21e42,stop:0.09 #7f1430,stop:0.48 #4b0a1d,
+        stop:0.84 #2b0510,stop:1 #190309);
+    border:1px solid #d31e45;
+    border-top:2px solid #ff6276;
+    border-left:1px solid #ed3153;
+    border-right:1px solid #5a0a22;
+    border-bottom:2px solid #190209;
+    border-radius:12px;
+}
+QFrame#profileCardFrame:hover {
+    background:qlineargradient(x1:0,y1:0,x2:0,y2:1,
+        stop:0 #bd284d,stop:0.18 #851635,stop:0.7 #410918,stop:1 #21040d);
+    border-top-color:#ff8793;
+    border-left-color:#ff4c68;
+}
+QLabel#heading, QLabel#readyTitle { color:#ffb0a5; }
+QLabel#adventureSlotLabel { color:#ff8895; }
+QPushButton#adventureSelectButton, QPushButton#secondaryButton,
+QPushButton#settingsHeaderTag {
+    color:#fff0ee;
+    background:qlineargradient(x1:0,y1:0,x2:0,y2:1,
+        stop:0 #952340,stop:0.18 #5d1127,stop:0.75 #2b0611,stop:1 #160307);
+    border-top:2px solid #fb6680;
+    border-left:1px solid #e72e54;
+    border-right:1px solid #33040f;
+    border-bottom:2px solid #100206;
+    border-radius:7px;
+}
+QPushButton#adventureSelectButton:hover, QPushButton#secondaryButton:hover,
+QPushButton#settingsHeaderTag:hover {
+    background:qlineargradient(x1:0,y1:0,x2:0,y2:1,
+        stop:0 #bd3152,stop:0.25 #7e1732,stop:1 #280511);
+    border-top-color:#ff96a7;
+}
+QTabWidget#launchTabs QTabBar::tab:selected {
+    color:#fff0ee;
+    background:#570e22;
+    border:1px solid #d83256;
+}
+QStatusBar { color:#ff8998; background:#150307; }
+"""
+
+
 def stylesheet_for(theme: str) -> str:
     current = normalized_theme(theme)
     filename = next(file for key, _label, file in THEMES if key == current)
@@ -283,7 +348,8 @@ def stylesheet_for(theme: str) -> str:
             + shared_gradient_qss(current)
             + adventure_menu_qss(current)
             + raised_button_qss(current)
-            + adventure_tooltip_qss(current))
+            + adventure_tooltip_qss(current)
+            + (ruby_finish_qss() if current == 'ruby' else ''))
 
 
 def selected_theme() -> str:
