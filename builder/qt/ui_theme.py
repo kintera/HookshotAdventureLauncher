@@ -11,6 +11,7 @@ from pathlib import Path
 THEMES = (
     ('goron', 'Darunia', 'hookshot_goron.qss'),
     ('gannon', 'Gannon', 'hookshot_gannon.qss'),
+    ('ruby', 'Ruby', 'hookshot_ruby.qss'),
     ('zelda', 'Link', 'hookshot_zelda_vaporwave.qss'),
     ('purple', 'Royal', 'hookshot_theme.qss'),
     ('blue_crystal', 'Ruto', 'hookshot_n64_blue_crystal.qss'),
@@ -37,6 +38,7 @@ SURFACE_COLORS = {
     'zelda_gold': ('#3c2b13', '#64481c', '#17120b', '#b38626'),
     'blue_crystal': ('#1c334d', '#314d69', '#101a30', '#5682ae'),
     'gannon': ('#35232f', '#563440', '#191018', '#8a4854'),
+    'ruby': ('#3e0d2b', '#7a174c', '#150713', '#d32775'),
     'zelda_pearl': ('#30275e', '#4b4b8b', '#11152f', '#ca9a70'),
     'goron': ('#18191c', '#3d3430', '#09090c', '#e05b28'),
 }
@@ -65,7 +67,7 @@ def shared_gradient_qss(theme: str) -> str:
         chrome = ('qlineargradient(x1:0,y1:0,x2:1,y2:1,'
                   'stop:0 #35315f,stop:0.49 #16172f,stop:0.82 #22204b,'
                   'stop:1 #664379)')
-    # All seven palettes share exactly the same outline geometry. This avoids
+    # All eight palettes share exactly the same outline geometry. This avoids
     # boxed text and oversized gilded rails in Zelda/Darunia; only hues vary.
     outline = rim
     return (f"\n/* Adventure v0.8: unified low-contrast outline geometry. */\n"
@@ -178,7 +180,7 @@ def raised_button_qss(theme: str) -> str:
 
     The top/left highlight and lower/right shadow give slight physical lift;
     :pressed reverses that bevel and nudges the label down one pixel. This is
-    appended after legacy theme QSS so all seven themes behave consistently.
+    appended after legacy theme QSS so all eight themes behave consistently.
     Selected profile-card state and readiness/status labels stay independent.
     """
     dark, light, bottom, rim = SURFACE_COLORS[normalized_theme(theme)]
