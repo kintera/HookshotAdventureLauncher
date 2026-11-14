@@ -804,7 +804,7 @@ class Window(QMainWindow):
     def _selected_theme_label():
         return {'purple':'royal', 'zelda':'link',
                 'zelda_gold':'tri force', 'blue_crystal':'ruto',
-                'gannon':'gannon', 'zelda_pearl':'zelda', 'goron':'darunia'}.get(selected_theme(), 'royal')
+                'gannon':'gannon', 'ruby':'ruby', 'zelda_pearl':'zelda', 'goron':'darunia'}.get(selected_theme(), 'royal')
 
     def show_adventure_details(self, profile_id):
         """Select explicitly, show save details, and never launch just from choosing."""
@@ -2089,7 +2089,7 @@ class Window(QMainWindow):
         chooser.addWidget(self.theme_combo)
         chooser.addStretch()
         av.addLayout(chooser)
-        note = QLabel('Seven themes; changes apply to the builder and Adventure Select together. No game or save data changes.')
+        note = QLabel('Eight themes; changes apply to the builder and Adventure Select together. No game or save data changes.')
         note.setObjectName('muted')
         note.setWordWrap(True)
         av.addWidget(note)
