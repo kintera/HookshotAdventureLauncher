@@ -84,7 +84,7 @@ class WindowLayoutTests(unittest.TestCase):
 
     def test_theme_options_are_distinct_and_shared(self):
         from ui_theme import THEMES, normalized_theme, stylesheet_for, theme_labels
-        self.assertEqual(tuple(key for key, label, file in THEMES), ('goron', 'gannon', 'zelda', 'purple', 'blue_crystal', 'zelda_gold', 'zelda_pearl'))
+        self.assertEqual(tuple(key for key, label, file in THEMES), ('goron', 'gannon', 'zelda', 'purple', 'ruby', 'blue_crystal', 'zelda_gold', 'zelda_pearl'))
         self.assertEqual(normalized_theme('unexpected'), 'purple')
         self.assertEqual(normalized_theme('zelda'), 'zelda')
         labels=dict(theme_labels())
