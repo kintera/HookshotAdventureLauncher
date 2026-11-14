@@ -31,6 +31,14 @@ class RubyThemeTests(unittest.TestCase):
                 self.assertIn("QWidget#launcherAdventurePage", css)
                 self.assertIn("QFrame#profileCardFrame", css)
 
+    def test_ruby_neon_finish_applied_last(self):
+        sheet = ui_theme.stylesheet_for("ruby")
+        self.assertIn("#ff6276", sheet)
+        self.assertIn("#a21e42", sheet)
+        self.assertGreater(sheet.rfind("Ruby showcase finish"),
+                           sheet.rfind("Theme-aware 3D controls"))
+        self.assertTrue(sheet.endswith(ui_theme.adventure_tooltip_qss("ruby")))
+
     def test_ruby_is_distinct_from_gannon(self):
         self.assertNotEqual(ui_theme.SURFACE_COLORS["ruby"], ui_theme.SURFACE_COLORS["gannon"])
         self.assertNotEqual(ui_theme.stylesheet_for("ruby"), ui_theme.stylesheet_for("gannon"))
