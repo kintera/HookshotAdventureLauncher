@@ -2401,6 +2401,40 @@ index 574ea000..8d37fd24 100644
              ]
              for label, before, after in mutations:
                  assert code.count(before) == 1, label
+diff --git a/tests/test_vk_pgo.py b/tests/test_vk_pgo.py
+index a3776e0f..ca4ef958 100644
+--- a/tests/test_vk_pgo.py
++++ b/tests/test_vk_pgo.py
+@@ -10,6 +10,8 @@ python -I -B tests/test_vk_pgo.py
+ """
+ import importlib.util
+ import os
++import subprocess
++import sys
+ import tempfile
+ from pathlib import Path
+ 
+@@ -158,8 +160,18 @@ def check_release():
+     appimage = (ROOT / "scripts" / "linux" / "appimage.sh").read_text(encoding="utf-8")
+     check("the AppImage builds no renderer of its own (every player's build compiles it, with the profile)",
+           "RX_VK_ONLY" not in appimage and "RX_VK_PGO" not in appimage)
+-    check("the AppImage carries assets/ (the committed profile, for every player's own renderer)",
+-          "cp -a nx2 host scripts LICENSE readme.md assets " in appimage)
++    if sys.platform.startswith("linux"):
++        start = appimage.index('mkdir -p "$T/assets"')
++        end = appimage.index("printf '%s", start)
++        with tempfile.TemporaryDirectory(prefix="hookshot-pgo-package-") as folder:
++            source, target = Path(folder) / "source", Path(folder) / "target"
++            (source / "assets/profiles").mkdir(parents=True)
++            (source / "assets/profiles/renderer.profdata.xz").write_bytes(b"authored fixture")
++            target.mkdir()
++            result = subprocess.run(["bash", "-eu", "-o", "pipefail", "-c", appimage[start:end]], cwd=source,
++                                    env=dict(os.environ, T=str(target)), capture_output=True, text=True)
++            check("the AppImage copies the committed profile", result.returncode == 0 and
++                  (target / "assets/profiles/renderer.profdata.xz").read_bytes() == b"authored fixture")
+     check("and a developer's own profile when the checkout has one",
+           "for f in hot_funcs.txt hot_order.txt hookshot_pieces.prof hookshot_vk.profdata; do" in appimage)
+     docs = (ROOT / "docs" / "development.md").read_text(encoding="utf-8")
 diff --git a/tests/test_linux_update_repository.py b/tests/test_linux_update_repository.py
 new file mode 100644
 index 00000000..fbfd6c19
