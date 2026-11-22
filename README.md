@@ -16,7 +16,9 @@ Create separate vanilla or randomized adventures and keep their saves in individ
 
 ![Adventure selection showing vanilla and randomized profiles](docs/screenshots/0.9.01-adventures.png)
 
-The screenshots below use **synthetic saves and placeholder icons**. With a supported local game selected, the launcher can build its private icon cache from that installation and show its save images. No extracted icons or game files are included here.
+These screenshots use example profiles and a captured game scene to illustrate the launcher. Inventory icons are displayed using the local game's artwork; the generated icon cache, game files, and personal saves are not included in this repository.
+
+![Adventure details showing inventory and quest progress](docs/screenshots/0.9.01-details.png)
 
 ## Save editor
 
@@ -63,6 +65,25 @@ Choose **Settings → Visual theme** to personalize the launcher. Your choice is
 | Tri-force | Antique gold and bronze |
 | Zelda | Blue-violet and soft accents |
 | Ruby | Garnet and vivid ruby-red |
+
+The current launcher in each theme:
+
+| Darunia | Gannon |
+| --- | --- |
+| ![Darunia theme](docs/screenshots/theme-goron.png) | ![Gannon theme](docs/screenshots/theme-gannon.png) |
+| **Link** | **Royal** |
+| ![Link theme](docs/screenshots/theme-zelda.png) | ![Royal theme](docs/screenshots/theme-purple.png) |
+| **Ruto** | **Tri-force** |
+| ![Ruto theme](docs/screenshots/theme-blue_crystal.png) | ![Tri-force theme](docs/screenshots/theme-zelda_gold.png) |
+| **Zelda** | **Ruby** |
+| ![Zelda theme](docs/screenshots/theme-zelda_pearl.png) | ![Ruby theme](docs/screenshots/theme-ruby.png) |
+
+<details>
+<summary>Earlier v0.8 theme showcase</summary>
+
+![The eight themes in the earlier v0.8 launcher](docs/screenshots/themes-showcase.png)
+
+</details>
 
 The launcher also provides settings for game launches, shader and pipeline tools, and development build and shader worker counts. Its compact layouts are designed for desktop and Steam Deck-sized screens; the alpha still needs wider hardware testing.
 
