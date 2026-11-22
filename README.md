@@ -68,7 +68,7 @@ The launcher also provides settings for game launches, shader and pipeline tools
 
 ## Setup
 
-This repository contains launcher source and a version-specific integration patch; it does **not** contain the native Hookshot source tree, a built game, or game files. The documented source setup currently targets Linux and requires the .NET 10 SDK, Git, and Hookshot's own build requirements. Windows and Steam Deck package installation have not been validated for this update.
+This repository contains launcher source and a version-specific integration patch; it does **not** contain the native Hookshot source tree, a built game, or game files. The documented source setup currently targets Linux and requires the .NET 10 SDK, Git, and Hookshot's own build requirements. A local Linux test AppImage passed Docker launcher and game-free build checks; it is not the final 0.9.01 package. Windows support is more experimental: a Windows package has not yet been integrated or tested. Steam Deck package installation has not been validated for this update.
 
 1. Obtain a fresh Hookshot v3.0.0 source checkout at the supported revision, along with your own compatible game files:
 
