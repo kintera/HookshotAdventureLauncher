@@ -6,9 +6,9 @@ Hookshot Adventure Launcher brings profiles, save management, an in-place save e
 
 > **Alpha source update:** This is for testing, not a finished randomizer or a ready-to-run game download. Some checks and event rewards remain vanilla, full-game beatability is not established, and several features still need gameplay testing. Back up important saves before experimenting.
 
-The C# launcher and integration are currently on the [0.9.01 alpha branch](https://github.com/kintera/HookshotAdventureLauncher/tree/release/v0.9.01-alpha); the default `main` branch still contains the earlier v0.8 launcher. Follow the branch checkout in [Setup](#setup) to try the alpha.
+The default branch contains the 0.9.01 alpha source. The earlier v0.8 source is retained on the `release/v0.8` branch and under `builder/qt/`.
 
-[Set up the launcher](#setup) · [Save editor](#save-editor) · [Randomizer](#randomizer) · [Enhancements](#enhancements) · [Testing and limitations](#testing-and-limitations)
+[Set up the launcher](#setup) · [Save editor](#save-editor) · [Randomizer](#randomizer) · [Enhancements](#enhancements) · [Themes](#themes) · [Testing and limitations](#testing-and-limitations)
 
 ## Adventures and saves
 
@@ -33,7 +33,7 @@ Adding a slingshot or bow also adds its basic seed bag or quiver when needed. So
 
 ## Randomizer
 
-The randomizer is being developed around [Ship of Harkinian's randomizer](https://www.shipofharkinian.com/randomizer) as a reference for its settings, placement, and world logic. Hookshot Adventure's implementation is still in development and does not yet have feature parity; see the [world logic notes](https://github.com/kintera/HookshotAdventureLauncher/blob/release/v0.9.01-alpha/builder/Adventure/docs/WORLD_LOGIC.md) for the current approach.
+The randomizer is being developed around [Ship of Harkinian's randomizer](https://www.shipofharkinian.com/randomizer) as a reference for its settings, placement, and world logic. Hookshot Adventure's implementation is still in development and does not yet have feature parity; see the [world logic notes](builder/Adventure/docs/WORLD_LOGIC.md) for the current approach.
 
 Create a randomized adventure with a profile-bound seed and configure the next seed from **Randomizer**. Existing seeds keep their recorded settings. The launcher scans the player's local game files for supported chest locations and lets players mark individual checks as filler-only. It also provides starting equipment, songs, consumables, and maps/compasses; supported chest sources for starting items are replaced with blue rupees.
 
@@ -41,13 +41,30 @@ Reviewed heart-piece chests and limited Saria, Lost Woods target, and one-time S
 
 ![Randomizer shuffle options](docs/screenshots/0.9.01-randomizer.png)
 
-The opening logic has checks, but the solver does not prove a full game is beatable. Event reward coverage is partial, and ammunition chests can still give arrows, bombs, or seeds before the corresponding bag is owned. Song, shop, and scrub shuffles and several other features are not implemented. See the [testing handoff](https://github.com/kintera/HookshotAdventureLauncher/blob/release/v0.9.01-alpha/builder/Adventure/docs/TESTING_HANDOFF.md) before starting a test seed.
+The opening logic has checks, but the solver does not prove a full game is beatable. Event reward coverage is partial, and ammunition chests can still give arrows, bombs, or seeds before the corresponding bag is owned. Song, shop, and scrub shuffles and several other features are not implemented. See the [testing handoff](builder/Adventure/docs/TESTING_HANDOFF.md) before starting a test seed.
 
 ## Enhancements
 
 Configure supported skips and speed-ups, including opening scenes, selected Deku sequences, child stealth, owl scenes, and fast text. Cosmetic controls offer tunic colors and modes, sword blade and swing-trail colors, and a hammer color. Some skips and cosmetic combinations remain experimental and need more gameplay coverage.
 
 ![Cosmetic color and randomization controls](docs/screenshots/0.9.01-cosmetics.png)
+
+## Themes
+
+Choose **Settings → Visual theme** to personalize the launcher. Your choice is saved between sessions and does not alter your game or saves. Eight styles are available:
+
+| Theme | Look |
+| --- | --- |
+| Darunia | Charcoal and ember-orange |
+| Gannon | Dark plum and muted rose |
+| Link | Deep emerald green |
+| Royal | Subdued purple |
+| Ruto | Cool crystal blue |
+| Tri-force | Antique gold and bronze |
+| Zelda | Blue-violet and soft accents |
+| Ruby | Garnet and vivid ruby-red |
+
+The launcher also provides settings for game launches, shader and pipeline tools, and development build and shader worker counts. Its compact layouts are designed for desktop and Steam Deck-sized screens; the alpha still needs wider hardware testing.
 
 ## Setup
 
@@ -60,10 +77,10 @@ This repository contains launcher source and a version-specific integration patc
    git -C Hookshot-v3.0.0 checkout 29619a1cdc9d15e450761600f4e8adc0ba14e23e
    ```
 
-2. Check out the alpha launcher source and apply its integration to the fresh Hookshot checkout:
+2. Check out this launcher source and apply its integration to the fresh Hookshot checkout:
 
    ```sh
-   git clone --branch release/v0.9.01-alpha https://github.com/kintera/HookshotAdventureLauncher.git
+   git clone https://github.com/kintera/HookshotAdventureLauncher.git
    cd HookshotAdventureLauncher
    ./install-into-hookshot.sh /path/to/Hookshot-v3.0.0
    ```
@@ -80,12 +97,29 @@ This repository contains launcher source and a version-specific integration patc
 
 ![Development installation setup with example paths](docs/screenshots/0.9.01-install.png)
 
-`./hookshot-dev.sh --builtin` opens the original Hookshot Builder. The launcher interface and randomizer preparation use C#; Hookshot's own build pipeline and save-editor backend still use Python. Detailed instructions, including build-tool setup and the local icon cache, are in the [Adventure documentation](https://github.com/kintera/HookshotAdventureLauncher/blob/release/v0.9.01-alpha/builder/Adventure/README.md).
+`./hookshot-dev.sh --builtin` opens the original Hookshot Builder. The launcher interface and randomizer preparation use C#; Hookshot's own build pipeline and save-editor backend still use Python. Detailed instructions, including build-tool setup and the local icon cache, are in the [Adventure documentation](builder/Adventure/README.md).
+
+The setup wizard offers an existing Hookshot installation with retained game files, a local `.nup`, or an extracted game folder. It can configure the language, build jobs, shader workers and retained objects. A separate development installation protects the existing installation and needs additional disk space. The launcher can prepare its Linux build tools and rebuild its local icon database; see the [installation and icon notes](builder/Adventure/README.md#game-installation-and-updates).
+
+## Repository layout
+
+```text
+builder/Adventure/src/HookshotAdventure.App/   Avalonia launcher interface
+builder/Adventure/src/HookshotAdventure.Core/  Profiles, randomizer, and shared logic
+builder/Adventure/src/HookshotAdventure.Cli/   Local research and resource tools
+builder/Adventure/tests/                       Game-free launcher tests
+builder/Adventure/docs/                        Design and testing notes
+integration/hookshot-v3.0.0.patch               Version-specific native integration
+install-into-hookshot.sh                       Checked integration installer
+builder/qt/                                    Earlier v0.8 launcher source
+```
 
 ## Testing and limitations
 
-Run `./hookshot-dev.sh --test` from the integrated Hookshot checkout for the C# core smoke tests. The [testing handoff](https://github.com/kintera/HookshotAdventureLauncher/blob/release/v0.9.01-alpha/builder/Adventure/docs/TESTING_HANDOFF.md) records known issues and gameplay scenarios; game-free tests do not establish compatibility or beatability. The original v0.8 source remains in `builder/qt/` for reference.
+Run `./hookshot-dev.sh --test` from the integrated Hookshot checkout for the C# core smoke tests. The [testing handoff](builder/Adventure/docs/TESTING_HANDOFF.md) records known issues and gameplay scenarios; game-free tests do not establish compatibility or beatability. The original v0.8 source remains in `builder/qt/` for reference. Release notes for this update are in [0.9.01 alpha](docs/RELEASE_0.9.01.md), and the [earlier release notes](docs/RELEASE_NOTES.md) remain available.
 
 ## Game data and license
 
 Game files, saves, generated binaries, extracted textures, and caches stay on the player's PC and are not distributed by this repository. The launcher is GPL-3.0; see [LICENSE](LICENSE) and the relevant third-party notices. Hookshot and game names are used descriptively; this project is not affiliated with Nintendo.
+
+This repository is the launcher source component for a compatible Hookshot checkout. It does not replace the Hookshot engine, its build requirements, or the player's own game files.
