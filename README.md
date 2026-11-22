@@ -70,11 +70,7 @@ Choose **Settings → Visual theme** to personalize the launcher. Your choice is
 | Zelda | Blue-violet and soft accents |
 | Ruby | Garnet and vivid ruby-red |
 
-The preview at the top of this page shows all eight themes in the current launcher.
-
-<details>
-<summary>View each current theme at full size</summary>
-
+The current launcher in each theme:
 
 | Darunia | Gannon |
 | --- | --- |
@@ -85,8 +81,6 @@ The preview at the top of this page shows all eight themes in the current launch
 | ![Ruto theme](docs/screenshots/theme-blue_crystal.png) | ![Tri-force theme](docs/screenshots/theme-zelda_gold.png) |
 | **Zelda** | **Ruby** |
 | ![Zelda theme](docs/screenshots/theme-zelda_pearl.png) | ![Ruby theme](docs/screenshots/theme-ruby.png) |
-
-</details>
 
 The earlier v0.8 theme showcase is also preserved:
 
