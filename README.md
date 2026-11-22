@@ -10,6 +10,8 @@ The default branch contains the 0.9.01 alpha source. The earlier v0.8 source is 
 
 [Set up the launcher](#setup) · [Save editor](#save-editor) · [Randomizer](#randomizer) · [Enhancements](#enhancements) · [Themes](#themes) · [Testing and limitations](#testing-and-limitations)
 
+![Preview of all eight current launcher themes: Darunia, Gannon, Link, Royal, Ruto, Tri-force, Zelda, and Ruby](docs/screenshots/0.9.01-theme-showcase.jpg)
+
 ## Adventures and saves
 
 Create separate vanilla or randomized adventures and keep their saves in individual profiles. The adventure screen offers three shortcuts and a profile manager; select a profile to see its save slots, location, hearts, inventory, equipment, songs, and quest progress before launching. External saves can also be selected. Slot and adventure deletion are separate actions with confirmation.
@@ -66,7 +68,11 @@ Choose **Settings → Visual theme** to personalize the launcher. Your choice is
 | Zelda | Blue-violet and soft accents |
 | Ruby | Garnet and vivid ruby-red |
 
-The current launcher in each theme:
+The preview at the top of this page shows all eight themes in the current launcher.
+
+<details>
+<summary>View each current theme at full size</summary>
+
 
 | Darunia | Gannon |
 | --- | --- |
@@ -78,12 +84,11 @@ The current launcher in each theme:
 | **Zelda** | **Ruby** |
 | ![Zelda theme](docs/screenshots/theme-zelda_pearl.png) | ![Ruby theme](docs/screenshots/theme-ruby.png) |
 
-<details>
-<summary>Earlier v0.8 theme showcase</summary>
+</details>
+
+The earlier v0.8 theme showcase is also preserved:
 
 ![The eight themes in the earlier v0.8 launcher](docs/screenshots/themes-showcase.png)
-
-</details>
 
 The launcher also provides settings for game launches, shader and pipeline tools, and development build and shader worker counts. Its compact layouts are designed for desktop and Steam Deck-sized screens; the alpha still needs wider hardware testing.
 
