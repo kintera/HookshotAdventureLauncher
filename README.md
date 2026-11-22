@@ -12,8 +12,6 @@ The default branch contains the 0.9.01 alpha source. The earlier v0.8 source is 
 
 [Set up the launcher](#setup) · [Save editor](#save-editor) · [Randomizer](#randomizer) · [Enhancements](#enhancements) · [Themes](#themes) · [Testing and limitations](#testing-and-limitations)
 
-![Preview of all eight current launcher themes: Darunia, Gannon, Link, Royal, Ruto, Tri-force, Zelda, and Ruby](docs/screenshots/0.9.01-theme-showcase.jpg)
-
 ## Adventures and saves
 
 Create separate vanilla or randomized adventures and keep their saves in individual profiles. The adventure screen offers three shortcuts and a profile manager; select a profile to see its save slots, location, hearts, inventory, equipment, songs, and quest progress before launching. External saves can also be selected. Slot and adventure deletion are separate actions with confirmation.
@@ -57,20 +55,7 @@ Configure supported skips and speed-ups, including opening scenes, selected Deku
 
 ## Themes
 
-Choose **Settings → Visual theme** to personalize the launcher. Your choice is saved between sessions and does not alter your game or saves. Eight styles are available:
-
-| Theme | Look |
-| --- | --- |
-| Darunia | Charcoal and ember-orange |
-| Gannon | Dark plum and muted rose |
-| Link | Deep emerald green |
-| Royal | Subdued purple |
-| Ruto | Cool crystal blue |
-| Tri-force | Antique gold and bronze |
-| Zelda | Blue-violet and soft accents |
-| Ruby | Garnet and vivid ruby-red |
-
-The current launcher in each theme:
+Choose **Settings → Visual theme** to personalize the launcher. Your choice is saved between sessions and does not alter your game or saves. Here are the eight current themes:
 
 | Darunia | Gannon |
 | --- | --- |
@@ -81,10 +66,6 @@ The current launcher in each theme:
 | ![Ruto theme](docs/screenshots/theme-blue_crystal.png) | ![Tri-force theme](docs/screenshots/theme-zelda_gold.png) |
 | **Zelda** | **Ruby** |
 | ![Zelda theme](docs/screenshots/theme-zelda_pearl.png) | ![Ruby theme](docs/screenshots/theme-ruby.png) |
-
-The earlier v0.8 theme showcase is also preserved:
-
-![The eight themes in the earlier v0.8 launcher](docs/screenshots/themes-showcase.png)
 
 The launcher also provides settings for game launches, shader and pipeline tools, and development build and shader worker counts. Its compact layouts are designed for desktop and Steam Deck-sized screens; the alpha still needs wider hardware testing.
 
