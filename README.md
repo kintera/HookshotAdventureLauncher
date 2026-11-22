@@ -1,126 +1,91 @@
 # Hookshot Adventure Launcher
 
-**Your adventure, your saves, your way.**
+**Version 0.9.01 alpha · C# / .NET / Avalonia**
 
-**Current source version: v0.8 (preview)** · [Release notes](docs/RELEASE_NOTES.md)
+Hookshot Adventure Launcher brings profiles, save management, an in-place save editor, experimental randomizer settings, and visual customization together in one interface for Hookshot. Choose an adventure, review a save, and launch it from a desktop or Steam Deck-sized window.
 
-Hookshot Adventure Launcher is a customizable **PyQt6 launcher and save manager for Hookshot**. Built with desktop Linux and Steam Deck-sized screens in mind, it brings game launching, multiple independent adventures, and a detailed view of your save progression into one streamlined interface.
+> **Alpha source update:** This is for testing, not a finished randomizer or a ready-to-run game download. Some checks and event rewards remain vanilla, full-game beatability is not established, and several features still need gameplay testing. Back up important saves before experimenting.
 
-Choose an adventure, review your progress, manage your saves, and launch the game without digging through save folders or configuration files. Its game-inspired visual themes, compact cards, and decoded inventory view put the adventure at the center of the experience.
+The C# launcher and integration are currently on the [0.9.01 alpha branch](https://github.com/kintera/HookshotAdventureLauncher/tree/release/v0.9.01-alpha); the default `main` branch still contains the earlier v0.8 launcher. Follow the branch checkout in [Setup](#setup) to try the alpha.
 
-> **Project status:** Active development / preview. This repository contains the **Python launcher, save-management UI, tests, and theme resources**—not the Hookshot native engine, compiler, shaders, copyrighted game data, or a prebuilt game. The installer/build pages require a compatible full Hookshot source checkout.
+[Set up the launcher](#setup) · [Save editor](#save-editor) · [Randomizer](#randomizer) · [Enhancements](#enhancements) · [Testing and limitations](#testing-and-limitations)
 
-**Explore:** [Themes](#themes) · [Screenshots](#screenshots) · [Installation](#run-from-a-compatible-hookshot-checkout) · [Testing](#testing)
+## Adventures and saves
 
-## Highlights
+Create separate vanilla or randomized adventures and keep their saves in individual profiles. The adventure screen offers three shortcuts and a profile manager; select a profile to see its save slots, location, hearts, inventory, equipment, songs, and quest progress before launching. External saves can also be selected. Slot and adventure deletion are separate actions with confirmation.
 
-- **Adventure Select:** three quick-access adventure slots with automatically populated save summaries and profile management.
-- **Independent saves:** manage distinct adventures without overwriting the original save; managed profiles can be moved to recoverable trash with confirmation.
-- **Detailed progress viewer:** hearts, magic, wallet, spiritual stones, medallions, inventory, masks, equipment, trading quest, bags, and a 13-song grid (7 + 6).
-- **Authentic icon mappings:** references the local game's own icons where available; extracted game files and assets are **not** included in this repository.
-- **Customization:** eight theme styles, along with launch and shader/pipeline warm-up settings.
-- **Desktop & handheld UI:** designed for compact windows and Steam Deck-oriented layouts, with a responsive Adventure Select page.
-- **Read-only save decoding:** display save information without editing gameplay saves. Some progression indicators are still being verified against real saves.
+![Adventure selection showing vanilla and randomized profiles](docs/screenshots/0.9.01-adventures.png)
 
-## Themes
+The screenshots below use **synthetic saves and placeholder icons**. With a supported local game selected, the launcher can build its private icon cache from that installation and show its save images. No extracted icons or game files are included here.
 
-![Eight Hookshot Adventure Launcher themes](docs/screenshots/themes-showcase.png)
+## Save editor
 
-Personalize the entire launcher with **eight built-in themes**. Each theme uses the same compact Adventure Select, profile manager, installer, and settings layouts. Switching themes does not change your game files or save data.
+Open an adventure, select a save slot, and choose **Edit Save**. Editing happens directly on the inventory screen:
 
-| Theme | Look |
-| --- | --- |
-| **Darunia** | Charcoal, basalt, and ember-orange highlights |
-| **Gannon** | Dark plum with muted rose accents |
-| **Link** | Deep emerald green |
-| **Royal** | Rich, subdued purple |
-| **Ruto** | Cool crystal blue |
-| **Tri-force** | Antique gold and dark bronze |
-| **Zelda** | Blue-violet with soft pink accents |
-| **Ruby** | Deep garnet, crimson, and vivid ruby-magenta highlights |
+- Click supported items and songs to add or remove them. Masks and trade items are managed independently.
+- Use the horizontal icon choices for bottles, bags, ocarinas, hookshot, strength, the Silver/Golden Scale, and trade items. Hover over supported consumables for a quantity slider.
+- Click hearts or the magic meter to change their levels; use the age selector where the save supports it.
+- Select **Save** to write staged changes, or **Cancel** to discard them. The editor checks for external modifications and backs up replaced files under the selected game folder's `save-backups/`.
 
-Select a theme from **Settings → Visual theme**. The selection persists across launcher sessions. Ruby is new in this preview and needs visual verification on desktop and Steam Deck-sized layouts.
+Adding a slingshot or bow also adds its basic seed bag or quiver when needed. Some fields are unavailable in particular saves, and equipped swords and shields must be unequipped in game before removal. Close the game before editing.
 
-## Screenshots
+![In-place save editor with scale choices](docs/screenshots/0.9.01-save-editor.png)
 
-### Adventure Select
+## Randomizer
 
-Three compact profile shortcuts with live save summaries and a one-click path to your next adventure.
+The randomizer is being developed around [Ship of Harkinian's randomizer](https://www.shipofharkinian.com/randomizer) as a reference for its settings, placement, and world logic. Hookshot Adventure's implementation is still in development and does not yet have feature parity; see the [world logic notes](https://github.com/kintera/HookshotAdventureLauncher/blob/release/v0.9.01-alpha/builder/Adventure/docs/WORLD_LOGIC.md) for the current approach.
 
-![Adventure Select showing three save slots](docs/screenshots/adventure-select.png)
+Create a randomized adventure with a profile-bound seed and configure the next seed from **Randomizer**. Existing seeds keep their recorded settings. The launcher scans the player's local game files for supported chest locations and lets players mark individual checks as filler-only. It also provides starting equipment, songs, consumables, and maps/compasses; supported chest sources for starting items are replaced with blue rupees.
 
-### Adventure Details
+Reviewed heart-piece chests and limited Saria, Lost Woods target, and one-time Skulltula House reward exchanges are experimental. Open Forest and Open Deku options are also experimental. The Skulltula maximum is stored as a preference but **is not enforced by the solver**. Randomized adventures use a separate 20-bombchu capacity without granting a bomb bag.
 
-A rich, read-only view of inventory, bag upgrades, equipment, heart containers, masks, medallions, songs, and quest progression.
+![Randomizer shuffle options](docs/screenshots/0.9.01-randomizer.png)
 
-![Adventure Details showing inventory and Life & Quest](docs/screenshots/adventure-details.png)
+The opening logic has checks, but the solver does not prove a full game is beatable. Event reward coverage is partial, and ammunition chests can still give arrows, bombs, or seeds before the corresponding bag is owned. Song, shop, and scrub shuffles and several other features are not implemented. See the [testing handoff](https://github.com/kintera/HookshotAdventureLauncher/blob/release/v0.9.01-alpha/builder/Adventure/docs/TESTING_HANDOFF.md) before starting a test seed.
 
-### Installation and configuration
+## Enhancements
 
-An integrated setup interface for connecting the launcher to a compatible native Hookshot build.
+Configure supported skips and speed-ups, including opening scenes, selected Deku sequences, child stealth, owl scenes, and fast text. Cosmetic controls offer tunic colors and modes, sword blade and swing-trail colors, and a hammer color. Some skips and cosmetic combinations remain experimental and need more gameplay coverage.
 
-![Game source and installation configuration](docs/screenshots/installer.png)
+![Cosmetic color and randomization controls](docs/screenshots/0.9.01-cosmetics.png)
 
-### Save management (earlier UI preview)
+## Setup
 
-This screenshot shows an earlier save-management design. The current launcher removes the manual-details editor and derives supported progress information from the save automatically.
+This repository contains launcher source and a version-specific integration patch; it does **not** contain the native Hookshot source tree, a built game, or game files. The documented source setup currently targets Linux and requires the .NET 10 SDK, Git, and Hookshot's own build requirements. Windows and Steam Deck package installation have not been validated for this update.
 
-![Earlier save-management UI prototype](docs/screenshots/manage-saves-preview.png)
+1. Obtain a fresh Hookshot v3.0.0 source checkout at the supported revision, along with your own compatible game files:
 
-## Requirements
+   ```sh
+   git clone https://git.notrexed.dev/Hookshot/Hookshot.git Hookshot-v3.0.0
+   git -C Hookshot-v3.0.0 checkout 29619a1cdc9d15e450761600f4e8adc0ba14e23e
+   ```
 
-- Linux desktop environment (Manjaro/KDE is the main development environment; Steam Deck-oriented layout)
-- Python 3.10+ and PyQt6
-- Compatible Hookshot installation/source for building and launching the game
-- Additional Python libraries listed in `builder/qt/runtime_requirements.txt`
+2. Check out the alpha launcher source and apply its integration to the fresh Hookshot checkout:
 
-## Run from a compatible Hookshot checkout
+   ```sh
+   git clone --branch release/v0.9.01-alpha https://github.com/kintera/HookshotAdventureLauncher.git
+   cd HookshotAdventureLauncher
+   ./install-into-hookshot.sh /path/to/Hookshot-v3.0.0
+   ```
 
-This repository mirrors the launcher subtree's expected paths. For the **full installation/build experience**, place the included `builder/qt/` directory and `assets/hookshot.png` into a compatible Hookshot source checkout, preserving those relative locations and the checkout's own `nx2/` directory. Then run:
+   The installer checks that the patch applies and refuses to overwrite an existing Adventure installation. Use a separate checkout for testing.
 
-```bash
-python3 -m pip install -r builder/qt/runtime_requirements.txt
-./builder/qt/start-hookshot-launcher.sh
-```
+3. From the Hookshot checkout, start the launcher:
 
-For systems with an externally managed Python environment (including many Arch/Manjaro installations), install dependencies with the system package manager or a compatible isolated environment instead of forcing a system-wide pip installation. The start script uses the selected system Python or `HOOKSHOT_PYTHON` if set.
+   ```sh
+   ./hookshot-dev.sh
+   ```
 
-**Important:** Cloning *only this repository* does **not** supply the native builder (`nx2/make_game.py`), game binaries, or game data. It is intended as a separate, versioned home for the launcher code, to be integrated with the compatible native Hookshot project.
+   Select an existing Hookshot installation with retained game files, a local NUP, or an extracted game folder in the setup wizard. Adventure can build a separate development installation; its native hooks must be rebuilt before randomized profiles can run. The copy needs additional disk space.
 
-## Repository layout
+![Development installation setup with example paths](docs/screenshots/0.9.01-install.png)
 
-```text
-assets/hookshot.png            Launcher brand icon
-builder/qt/hookshot_qt.py     Main PyQt6 launcher
-builder/qt/profile_gui.py    Profile management interface
-builder/qt/profile_store.py  Profile persistence and managed saves
-builder/qt/save_reader.py    Read-only game-save decoding
-builder/qt/zelda_summary_widget.py  Adventure progress display
-builder/qt/assets/game_icons/icon_manifest.json  Game icon role mappings
-builder/qt/*.qss             UI themes
-builder/qt/test_*.py         Source-level regression tests
-```
+`./hookshot-dev.sh --builtin` opens the original Hookshot Builder. The launcher interface and randomizer preparation use C#; Hookshot's own build pipeline and save-editor backend still use Python. Detailed instructions, including build-tool setup and the local icon cache, are in the [Adventure documentation](https://github.com/kintera/HookshotAdventureLauncher/blob/release/v0.9.01-alpha/builder/Adventure/README.md).
 
-## Testing
+## Testing and limitations
 
-From the repository root:
+Run `./hookshot-dev.sh --test` from the integrated Hookshot checkout for the C# core smoke tests. The [testing handoff](https://github.com/kintera/HookshotAdventureLauncher/blob/release/v0.9.01-alpha/builder/Adventure/docs/TESTING_HANDOFF.md) records known issues and gameplay scenarios; game-free tests do not establish compatibility or beatability. The original v0.8 source remains in `builder/qt/` for reference.
 
-```bash
-python3 -m unittest discover -s builder/qt -p 'test_*.py'
-```
+## Game data and license
 
-Visual verification requires PyQt6 and a display environment. Tests do not replace in-game validation of save-field interpretations.
-
-## Save safety and data distribution
-
-The launcher is intended to read and manage saves without editing their game-progress values. Only explicitly managed profiles can be deleted via the launcher, with a confirmation step and recoverable trash. **Back up important saves before experimenting with preview software.**
-
-This source distribution deliberately **excludes saves, ROMs, extracted textures, compiled binaries, personal paths, caches, and other game assets**. The icon manifest names expected files in a local game installation; those files are not redistributed.
-
-## Relationship to Hookshot
-
-This repository is the standalone **launcher source component** for a compatible Hookshot game port. It is not the native game engine or a replacement for the official game installation/build requirements. Game and character names are used descriptively; no affiliation with Nintendo is claimed.
-
-## License
-
-GPL-3.0, retaining the licensing terms from the source project. See [LICENSE](LICENSE). Review upstream copyright notices and third-party dependencies before redistribution.
+Game files, saves, generated binaries, extracted textures, and caches stay on the player's PC and are not distributed by this repository. The launcher is GPL-3.0; see [LICENSE](LICENSE) and the relevant third-party notices. Hookshot and game names are used descriptively; this project is not affiliated with Nintendo.
