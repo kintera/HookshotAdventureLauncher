@@ -39,17 +39,35 @@ index 1df8c3b7..51c817f7 100755
 +    fi
 +fi
  exec "$PY" -I "$HOOKSHOT_TOOLS/builder/linux/hookshot_builder.py" "$@"
+diff --git a/builder/linux/hookshot_builder.py b/builder/linux/hookshot_builder.py
+index a9857656..301c2c70 100644
+--- a/builder/linux/hookshot_builder.py
++++ b/builder/linux/hookshot_builder.py
+@@ -1298,7 +1298,8 @@ class Builder(tk.Tk):
+         elif game:
+             self.launch_status.set("Up to date")
+         else:
+-            self.launch_status.set("Could not check for updates (GitHub did not answer)" if self.latest is None else "Hookshot")
++            self.launch_status.set("HAL alpha updates are manual" if linux_update.manual_updates_only() else
++                                   ("Could not check for updates (GitHub did not answer)" if self.latest is None else "Hookshot"))
+         if hasattr(self, "launch_update"):
+             self.launch_update.pack(side="right", padx=self.px(4)) if show else self.launch_update.pack_forget()
+ 
 diff --git a/builder/linux/linux_update.py b/builder/linux/linux_update.py
-index 84bb51f6..12a5f591 100644
+index 84bb51f6..e36c040f 100644
 --- a/builder/linux/linux_update.py
 +++ b/builder/linux/linux_update.py
-@@ -23,9 +23,23 @@ import zipfile
+@@ -23,9 +23,27 @@ import zipfile
  from part_links import SYSROOT_PART, is_absolute_link, relative_sysroot_link
  
  LIST_NAME = "hookshot-linux.txt"
 -LATEST_LIST = "https://git.notrexed.dev/Hookshot/Hookshot/releases/latest/download/" + LIST_NAME
 -LATEST_API = "https://git.notrexed.dev/api/v1/repos/Hookshot/Hookshot/releases/latest"
 -RELEASES_API = "https://git.notrexed.dev/api/v1/repos/Hookshot/Hookshot/releases?limit=20"
++def manual_updates_only():
++    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
++    return os.path.isfile(os.path.join(root, "HAL_MANUAL_UPDATES"))
++
 +def release_repository():
 +    """The packaged fork's release source, or upstream for a stock checkout/image."""
 +    path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "UPDATE_REPOSITORY")
@@ -70,7 +88,7 @@ index 84bb51f6..12a5f591 100644
  # (the update tracks: the builder's Track choice, by default the track of the build installed. The setup,
  # builder/setup/setup.c, and the Windows builder, Updater.cs, use the same rules)
  TRACKS = ("release", "rc", "nightly")
-@@ -130,7 +144,7 @@ def release_of(tag):
+@@ -130,7 +148,7 @@ def release_of(tag):
  def list_url(tag=None):
      if not tag:
          return LATEST_LIST
@@ -79,7 +97,7 @@ index 84bb51f6..12a5f591 100644
  
  
  def newest_release(tags):
-@@ -362,7 +376,7 @@ def fetch_bytes(url, timeout=60, stop=None):
+@@ -362,7 +380,7 @@ def fetch_bytes(url, timeout=60, stop=None):
  
  # (hookshot, 2026-11-15) The Version menu: every release on git.notrexed.dev, page by page (Forgejo gives 50 a page at most), read
  # when the menu is first opened. As the Windows builder's ReleaseList.cs. tests/test_builder_version_menu.py
@@ -88,6 +106,33 @@ index 84bb51f6..12a5f591 100644
  PAGE_SIZE, MOST_PAGES = 50, 40
  
  
+@@ -391,6 +409,8 @@ def releases_in(pages):
+ def all_releases(get=None):
+     """Every release, all pages, newest first; None when git.notrexed.dev did not answer (a page failing part way too, so the
+     menu never shows a list cut short as if it were all)"""
++    if manual_updates_only():
++        return None
+     import json
+     get = get or (lambda url: fetch_bytes(url, 20))
+     pages = []
+@@ -416,6 +436,8 @@ def latest_tag(get=None, track="release"):
+     (60 an hour), the setup list's tag otherwise, which is a file download and not that limit (the same fallback as the
+     Windows builder). rc: the newest of the release candidates and the releases (an RC is offered its version's release
+     once that ships), the latest release when the API does not answer. nightly: the nightly's list's tag."""
++    if manual_updates_only():
++        return None
+     get = get or (lambda url: fetch_bytes(url, 8))
+     if track == "nightly":
+         try:
+@@ -685,6 +707,8 @@ def installed_apprun():
+ 
+ 
+ def fetch_manifest(get=None, tag=None):
++    if manual_updates_only():
++        raise RuntimeError("Automatic updates are unavailable in HAL 0.9.01 alpha; download a newer release manually.")
+     get = get or (lambda url: fetch_bytes(url, 30))
+     override = os.environ.get("HOOKSHOT_LINUX_LIST")
+     if override:
 diff --git a/gpu/vk/switches.def b/gpu/vk/switches.def
 index 7c40a39b..1c1e67e8 100644
 --- a/gpu/vk/switches.def
@@ -1223,7 +1268,7 @@ index b7c8edcf..90273b68 100644
      q.add_argument("--timeout", type=float, default=600, help="seconds to wait for the bridge (shaders may be prepared first)")
      sub.add_parser("status")
 diff --git a/scripts/linux/appimage.sh b/scripts/linux/appimage.sh
-index 1d8ddfec..93ca7235 100755
+index 1d8ddfec..95903b71 100755
 --- a/scripts/linux/appimage.sh
 +++ b/scripts/linux/appimage.sh
 @@ -5,6 +5,8 @@
@@ -1235,7 +1280,7 @@ index 1d8ddfec..93ca7235 100755
  #
  # Built on the oldest system it is for (CI: Ubuntu 22.04): the sysroot it carries is that system's C library, so the
  # game it builds runs on glibc 2.35 and newer. work/ (hot_funcs.txt, hot_order.txt, hookshot_pieces.prof,
-@@ -24,6 +26,35 @@ APPDIR=$B/AppDir
+@@ -24,6 +26,39 @@ APPDIR=$B/AppDir
  VERSION=${HOOKSHOT_VERSION:-$(git describe --tags --long --always --match "v[0-9]*" 2>/dev/null || echo dev)}
  export EMSDK=$DEPS/emsdk RX_CPM=$DEPS/cpm
  PY=$DEPS/python/bin/python3
@@ -1267,11 +1312,26 @@ index 1d8ddfec..93ca7235 100755
 +    "$HOOKSHOT_ADVENTURE_ASTCENC" -help >/dev/null 2>&1 || {
 +        echo "The supplied astcenc does not run on this build system" >&2; exit 1;
 +    }
++    [ -s "$A/resources/icon_manifest.json" ] || { echo "Adventure icon manifest is missing" >&2; exit 1; }
++    [ -s builder/Adventure/src/HookshotAdventure.App/Assets/HAL_release_256.png ] || {
++        echo "Adventure desktop icon is missing" >&2; exit 1;
++    }
 +fi
  
  # ---- the tools' native helpers, built now: the AppImage is read-only. a64emit with its C++ runtime inside (the one this system
  # builds with is newer than older systems have), and the stamp build_emit.py checks, so it is not built again ----
-@@ -45,6 +76,17 @@ printf '%s
+@@ -40,11 +75,31 @@ T=$APPDIR/usr/share/hookshot
+ L=$APPDIR/usr/lib/hookshot   # (what the image builds with: emsdk's clang, FFmpeg, SDL2, the sysroot; AppRun points there)
+ 
+ # ---- the tools (the sources the player's build compiles, and the scripts) ----
+-cp -a nx2 host scripts LICENSE readme.md assets native "$T/"
++cp -a nx2 host scripts LICENSE readme.md native "$T/"
++mkdir -p "$T/assets"
++# Save fixtures are for local testing, not the player image.
++for asset in assets/*; do
++    [ "${asset##*/}" = saves ] || cp -a "$asset" "$T/assets/"
++done
+ printf '%s
  ' "$VERSION" > "$T/VERSION"   # (no git history in here: nx2/version.py reads the release name from it)
  mkdir -p "$T/builder" "$T/gpu/render" "$T/gpu/vk" "$T/third_party"
  cp -a builder/linux "$T/builder/"
@@ -1280,16 +1340,20 @@ index 1d8ddfec..93ca7235 100755
 +if [ -n "${HOOKSHOT_ADVENTURE_PUBLISH:-}" ]; then
 +    mkdir -p "$T/builder/Adventure/app" "$T/licenses/adventure"
 +    cp -a "$A/." "$T/builder/Adventure/app/"
++    mkdir -p "$T/builder/Adventure/resources"
++    cp "$A/resources/icon_manifest.json" "$T/builder/Adventure/resources/"
 +    cp -a "$N/." "$T/licenses/adventure/"
 +    cp -L "$HOOKSHOT_ADVENTURE_ASTCENC" "$T/builder/Adventure/app/astcenc-sse2"
 +    chmod 755 "$T/builder/Adventure/app/astcenc-sse2"
 +    cp -L "$HOOKSHOT_ADVENTURE_ASTC_LICENSE" "$T/licenses/adventure/astcenc-LICENSE.txt"
 +    printf '%s\n' "$HOOKSHOT_REPOSITORY" > "$T/UPDATE_REPOSITORY"
++    # The alpha has no hosted update manifests; never use upstream's updater.
++    : > "$T/HAL_MANUAL_UPDATES"
 +fi
  cp -a gpu/render/*.h "$T/gpu/render/"
  # (every gpu/vk header the host's sources include: v2.0.6 shipped without oot_cheat_items.h and no Linux build finished, issue 990.
  # tests/test_appimage_headers.py checks that this covers what host/ includes)
-@@ -103,7 +145,10 @@ for d in "$DEPS"/cpm/*/*; do
+@@ -103,7 +158,10 @@ for d in "$DEPS"/cpm/*/*; do
      mkdir -p "$T/cpm/${d#"$DEPS/cpm/"}"
      cp -a "$d/include" "$T/cpm/${d#"$DEPS/cpm/"}/"
  done
@@ -1301,6 +1365,45 @@ index 1d8ddfec..93ca7235 100755
  # ---- the licences of the third-party parts compiled into hookshot_vk.so (tests/test_appimage_licenses.py) ----
  mkdir -p "$T/licenses/imgui" "$T/licenses/zstd" "$T/licenses/libertinus" "$T/licenses/fidelityfx" "$T/licenses/fidelityfx-sdk"
  cp third_party/imgui/LICENSE.txt third_party/imgui/PROVENANCE.md "$T/licenses/imgui/"
+@@ -200,11 +258,18 @@ EOF
+ # ---- the AppDir's own files ----
+ cp builder/linux/AppRun "$APPDIR/AppRun"
+ cp builder/linux/hookshot-builder.desktop "$APPDIR/"
++if [ -n "${HOOKSHOT_ADVENTURE_PUBLISH:-}" ]; then
++    sed -i 's/^Name=Hookshot Builder$/Name=Hookshot Adventure Launcher/' "$APPDIR/hookshot-builder.desktop"
++fi
+ # (RecompLauncher reads this from inside the AppImage, at /recomplauncher.json)
+ cp recomplauncher.json "$APPDIR/recomplauncher.json"
+-cp assets/hookshot.png "$APPDIR/hookshot.png"
++if [ -n "${HOOKSHOT_ADVENTURE_PUBLISH:-}" ]; then
++    cp builder/Adventure/src/HookshotAdventure.App/Assets/HAL_release_256.png "$APPDIR/hookshot.png"
++else
++    cp assets/hookshot.png "$APPDIR/hookshot.png"
++fi
+ mkdir -p "$APPDIR/usr/share/icons/hicolor/256x256/apps"
+-cp assets/hookshot.png "$APPDIR/usr/share/icons/hicolor/256x256/apps/hookshot.png"
++cp "$APPDIR/hookshot.png" "$APPDIR/usr/share/icons/hicolor/256x256/apps/hookshot.png"
+ 
+ # (the update list, beside AppRun and not inside a hashed part: hookshot-linux.txt names each part's checksum)
+ # (the parts are served from the linux-parts release of the repository this is built in, where
+@@ -223,7 +288,13 @@ UPDATE_INFO=${HOOKSHOT_UPDATE_INFO:-"zsync|https://git.notrexed.dev/$UPDATE_REPO
+ OUT=$B/Hookshot-$VERSION-x86_64.AppImage
+ rm -f "$OUT" "$OUT.zsync"
+ # (from build-linux/: appimagetool writes the .zsync into the current folder)
+-(cd "$B" && ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=1 "$DEPS/appimagetool" --runtime-file "$DEPS/runtime-x86_64" \
+-    --comp zstd -u "$UPDATE_INFO" "$APPDIR" "$(basename "$OUT")")
+-[ -f "$OUT.zsync" ] || { echo "appimagetool made no $OUT.zsync"; exit 1; }
+-echo "$OUT: $(du -h "$OUT" | cut -f1), update information: $UPDATE_INFO"
++if [ -n "${HOOKSHOT_ADVENTURE_PUBLISH:-}" ]; then
++    (cd "$B" && ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=1 "$DEPS/appimagetool" --runtime-file "$DEPS/runtime-x86_64" \
++        --comp zstd "$APPDIR" "$(basename "$OUT")")
++    echo "$OUT: $(du -h "$OUT" | cut -f1), updates are manual"
++else
++    (cd "$B" && ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=1 "$DEPS/appimagetool" --runtime-file "$DEPS/runtime-x86_64" \
++        --comp zstd -u "$UPDATE_INFO" "$APPDIR" "$(basename "$OUT")")
++    [ -f "$OUT.zsync" ] || { echo "appimagetool made no $OUT.zsync"; exit 1; }
++    echo "$OUT: $(du -h "$OUT" | cut -f1), update information: $UPDATE_INFO"
++fi
 diff --git a/scripts/linux/docker.sh b/scripts/linux/docker.sh
 index 12e9a5be..1d7f17ea 100755
 --- a/scripts/linux/docker.sh
@@ -1388,7 +1491,7 @@ index a94723bd..3af8f344 100644
  
      def test_vk_third_party_covered(self):
 diff --git a/tests/test_appimage_scripts.py b/tests/test_appimage_scripts.py
-index 7adea155..8cb79f1e 100644
+index 7adea155..7e989302 100644
 --- a/tests/test_appimage_scripts.py
 +++ b/tests/test_appimage_scripts.py
 @@ -9,6 +9,7 @@ failed with FileNotFoundError on scripts/ngx_sdk.py.
@@ -1399,7 +1502,7 @@ index 7adea155..8cb79f1e 100644
  import subprocess
  import sys
  import tempfile
-@@ -31,12 +32,144 @@ class AppImageScripts(unittest.TestCase):
+@@ -31,12 +32,149 @@ class AppImageScripts(unittest.TestCase):
          end = script.index("cp -a third_party/opus", start)
          with tempfile.TemporaryDirectory(prefix="hookshot-appimage-scripts-") as folder:
              env = dict(os.environ, T=folder, VERSION="authored-test")
@@ -1421,6 +1524,8 @@ index 7adea155..8cb79f1e 100644
 +            for path in (publish, notices, dest):
 +                path.mkdir()
 +            (publish / "HookshotAdventure.App").write_bytes(b"authored application")
++            (publish / "resources").mkdir()
++            (publish / "resources/icon_manifest.json").write_text('{"icons": {}}', encoding="utf-8")
 +            (notices / "license.txt").write_bytes(b"authored notice")
 +            codec, license = root / "astcenc", root / "astc-license"
 +            codec.write_bytes(b"authored codec")
@@ -1435,6 +1540,9 @@ index 7adea155..8cb79f1e 100644
 +            self.assertEqual((dest / "builder/Adventure/app/HookshotAdventure.App").read_bytes(), b"authored application")
 +            self.assertEqual((dest / "licenses/adventure/license.txt").read_bytes(), b"authored notice")
 +            self.assertEqual((dest / "UPDATE_REPOSITORY").read_text().strip(), "example/Adventure")
++            self.assertTrue((dest / "HAL_MANUAL_UPDATES").is_file())
++            self.assertEqual((dest / "builder/Adventure/resources/icon_manifest.json").read_text(), '{"icons": {}}')
++            self.assertFalse((dest / "assets/saves").exists())
 +            self.assertEqual((dest / "builder/Adventure/app/astcenc-sse2").read_bytes(), b"authored codec")
 +            self.assertEqual((dest / "licenses/adventure/astcenc-LICENSE.txt").read_text(), "authored codec license")
 +            self.assertTrue((dest / "builder/linux/hookshot_builder.py").is_file())
@@ -2149,6 +2257,32 @@ index fa9030c2..fb5241e3 100644
  
  static int played(WAVEHDR *h) {   /* (the device's callback took the block within 2 s) */
      for (int i = 0; i < 400; i++) {
+diff --git a/tests/test_ship_state_list.py b/tests/test_ship_state_list.py
+index 6f4c2692..4a275ef4 100644
+--- a/tests/test_ship_state_list.py
++++ b/tests/test_ship_state_list.py
+@@ -68,7 +68,20 @@ class ShippedList(unittest.TestCase):
+     @unittest.skipUnless(sys.platform.startswith("linux"), "the AppImage is made on Linux")
+     def test_appimage_carries_it(self):
+         script = (ROOT / "scripts/linux/appimage.sh").read_text(encoding="utf-8")
+-        self.assertRegex(script, r"\ncp -a [^\n]*\bassets\b[^\n]*\"\$T/\"\n", "the AppImage no longer carries assets/")
++        copy_start = script.index('mkdir -p "$T/assets"')
++        copy_end = script.index("printf '%s", copy_start)
++        source = self.tmp / "copy-source"
++        (source / "assets/pipeline_states").mkdir(parents=True)
++        (source / "assets/pipeline_states/example.bin.xz").write_bytes(b"authored fixture")
++        (source / "assets/saves").mkdir()
++        (source / "assets/saves/private.sav").write_bytes(b"authored fixture")
++        target = self.tmp / "copy-output"
++        target.mkdir()
++        copied = subprocess.run(["bash", "-eu", "-o", "pipefail", "-c", script[copy_start:copy_end]],
++                                cwd=source, env=dict(os.environ, T=str(target)), capture_output=True, text=True)
++        self.assertEqual(copied.returncode, 0, copied.stderr)
++        self.assertEqual((target / "assets/pipeline_states/example.bin.xz").read_bytes(), b"authored fixture")
++        self.assertFalse((target / "assets/saves").exists())
+         start = script.index("# (the pipeline state list's sources, assets/pipeline_states/")
+         end = script.index("\n", script.index("holds no pipeline state list", start)) + 1
+         block = script[start:end]
 diff --git a/tests/test_udmabuf_selection.py b/tests/test_udmabuf_selection.py
 index 574ea000..8d37fd24 100644
 --- a/tests/test_udmabuf_selection.py
@@ -2226,3 +2360,73 @@ index 574ea000..8d37fd24 100644
              ]
              for label, before, after in mutations:
                  assert code.count(before) == 1, label
+diff --git a/tests/test_linux_update_repository.py b/tests/test_linux_update_repository.py
+new file mode 100644
+index 00000000..fbfd6c19
+--- /dev/null
++++ b/tests/test_linux_update_repository.py
+@@ -0,0 +1,64 @@
++"""A packaged fork's updater must use that fork for every release lookup."""
++import json
++from pathlib import Path
++import shutil
++import subprocess
++import sys
++import tempfile
++import unittest
++
++ROOT = Path(__file__).resolve().parents[1]
++
++
++class UpdateRepository(unittest.TestCase):
++    def test_manual_update_image_never_fetches_release_data(self):
++        with tempfile.TemporaryDirectory(prefix="hookshot-manual-updates-") as folder:
++            tools = Path(folder)
++            linux = tools / "builder/linux"
++            linux.mkdir(parents=True)
++            for name in ("linux_update.py", "part_links.py"):
++                shutil.copy(ROOT / "builder/linux" / name, linux / name)
++            (tools / "HAL_MANUAL_UPDATES").touch()
++            code = '''
++import sys
++sys.path.insert(0, sys.argv[1])
++import linux_update as u
++def fail(url): raise AssertionError("unexpected network call")
++assert u.latest_tag(get=fail) is None
++assert u.all_releases(get=fail) is None
++try: u.fetch_manifest(get=fail)
++except RuntimeError as exc: assert "manually" in str(exc)
++else: raise AssertionError("manual update image fetched a manifest")
++'''
++            result = subprocess.run([sys.executable, "-I", "-B", "-c", code, str(linux)],
++                                    capture_output=True, text=True)
++            self.assertEqual(result.returncode, 0, result.stderr)
++
++    def test_packaged_repository_and_stock_default(self):
++        with tempfile.TemporaryDirectory(prefix="hookshot-update-repository-") as folder:
++            tools = Path(folder)
++            linux = tools / "builder/linux"
++            linux.mkdir(parents=True)
++            for name in ("linux_update.py", "part_links.py"):
++                shutil.copy(ROOT / "builder/linux" / name, linux / name)
++            code = ("import json, sys; sys.path.insert(0, sys.argv[1]); import linux_update as u; "
++                    "print(json.dumps([u.LATEST_LIST, u.LATEST_API, u.RELEASES_API, "
++                    "u.RELEASES_PAGE % 2, u.list_url('v3.0.0')]))")
++            def run():
++                return subprocess.run([sys.executable, "-I", "-B", "-c", code, str(linux)],
++                                      capture_output=True, text=True)
++            stock = run()
++            self.assertEqual(stock.returncode, 0, stock.stderr)
++            self.assertTrue(all("Hookshot/Hookshot" in url for url in json.loads(stock.stdout)))
++            (tools / "UPDATE_REPOSITORY").write_text("Example/Adventure\n", encoding="utf-8")
++            fork = run()
++            self.assertEqual(fork.returncode, 0, fork.stderr)
++            self.assertTrue(all("Example/Adventure" in url for url in json.loads(fork.stdout)))
++            (tools / "UPDATE_REPOSITORY").write_text("../unsafe\n", encoding="utf-8")
++            invalid = run()
++            self.assertNotEqual(invalid.returncode, 0)
++            self.assertIn("Invalid packaged update repository", invalid.stderr)
++
++
++if __name__ == "__main__":
++    unittest.main()
