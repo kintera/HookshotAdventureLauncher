@@ -638,6 +638,11 @@ internal static class HAL_Program
             var introPage = installScreen.FindControl<Border>("InstallIntroCard")!;
             var setupPage = installScreen.FindControl<Border>("InstallConfigurationCard")!;
             var progressPage = installScreen.FindControl<Border>("InstallStatusCard")!;
+            Check(installScreen.FindControl<Button>("InstallDownloadHookshotButton") is not null &&
+                  installScreen.FindControl<StackPanel>("InstallDownloadOffer")!.IsVisible ==
+                    (HAL_HookshotDownload.ShouldOffer(HookshotGame.StableGameDirectory(), installPreferences.Value.DevGameDirectory,
+                        installPreferences.Value.GameDirectory) && (OperatingSystem.IsLinux() || OperatingSystem.IsWindows())),
+                "first-run setup offers the official builder only when no installation is found");
             Check(introPage.IsVisible && !setupPage.IsVisible && !progressPage.IsVisible &&
                   !installScreen.FindControl<Button>("InstallStartButton")!.IsVisible,
                 "installer opens only its introduction screen and cannot start a build there");
@@ -681,17 +686,32 @@ internal static class HAL_Program
                 Check(setupPage.IsVisible && !progressPage.IsVisible, "cancelled installation can return to locations");
             }
             threeCardInstaller.Close(); Pump();
+            var missingToolsInstaller = new HAL_DevelopmentBuildDialog(Path.Combine(root, "missing-tools"), installPreferences,
+                buildSource, customOutput, false, true, true, 4);
+            missingToolsInstaller.Show(window); Pump();
+            var missingToolsScreen = missingToolsInstaller.Screen;
+            Check(missingToolsScreen.FindControl<TextBlock>("InstallMissingToolsNotice")!.IsVisible &&
+                  missingToolsScreen.FindControl<Button>("InstallDownloadHookshotButton") is not null,
+                "standalone setup explains missing build tools while retaining the download option");
+            missingToolsScreen.FindControl<Button>("InstallNextButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            missingToolsScreen.FindControl<Button>("InstallReviewButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Check(missingToolsScreen.FindControl<HAL_BuildProgressView>("InstallProgress")!.ResultText.Contains("build tools are missing"),
+                "setup blocks a development build when its build tools are missing");
+            missingToolsInstaller.Close(); Pump();
             var existingGame = Path.Combine(root, "existing-hookshot");
             Directory.CreateDirectory(Path.Combine(existingGame, "romfs"));
             Directory.CreateDirectory(Path.Combine(existingGame, ".hookshot_exefs"));
             File.WriteAllText(Path.Combine(existingGame, ".hookshot_exefs", "main"), "authored game fixture");
             File.WriteAllText(HookshotGame.ResolveExecutable(existingGame), "authored executable");
+            File.WriteAllText(HookshotGame.ResolveRenderer(existingGame), "authored renderer");
             File.WriteAllText(Path.Combine(existingGame, "image.bin"), "authored image");
             installPreferences.SetGameDirectory(existingGame);
             var existingInstaller = new HAL_DevelopmentBuildDialog(Environment.CurrentDirectory, installPreferences,
                 "", customOutput, false, true, true, 4);
             existingInstaller.Show(window); Pump();
             var existingScreen = existingInstaller.Screen;
+            Check(!existingScreen.FindControl<StackPanel>("InstallDownloadOffer")!.IsVisible,
+                "an existing Hookshot installation hides the builder download offer");
             existingScreen.FindControl<Button>("InstallNextButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Check(existingScreen.SourcePath == existingGame && existingScreen.FindControl<ComboBox>("InstallSourceFormat")!.SelectedIndex == 2 &&
                 existingScreen.FindControl<TextBlock>("InstallSourceStatus")!.Text!.Contains("separate copy"),

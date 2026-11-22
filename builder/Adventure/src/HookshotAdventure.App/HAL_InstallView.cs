@@ -41,6 +41,7 @@ public sealed class HAL_InstallView : UserControl
     private readonly StackPanel _sourceFields = new() { Spacing = 6 };
     private readonly StackPanel _configuration = new() { Spacing = 6 };
     private CancellationTokenSource? _cancellation;
+    private CancellationTokenSource? _downloadCancellation;
     private bool _running;
 
     public bool Completed { get; private set; }
@@ -129,6 +130,63 @@ public sealed class HAL_InstallView : UserControl
             new TextBlock { Text = "Install Hookshot from your own local game files. Next, choose your game source, installation location and build options.", TextWrapping = TextWrapping.Wrap },
             new TextBlock { Text = "Your source files stay unchanged. Installation can take a while; the final screen shows progress and the live build log.", TextWrapping = TextWrapping.Wrap }
         } };
+        var missingTools = new TextBlock { Name = "InstallMissingToolsNotice", TextWrapping = TextWrapping.Wrap,
+            IsVisible = !File.Exists(Path.Combine(_root, "nx2", "make_game.py")),
+            Text = "HAL's Hookshot-Dev build tools were not found. You can download the official Builder below; to build Hookshot-Dev, follow the HAL setup instructions for a compatible Hookshot source checkout." };
+        Name("InstallMissingToolsNotice", missingTools);
+        introduction.Children.Add(missingTools);
+        var downloadStatus = new TextBlock { TextWrapping = TextWrapping.Wrap };
+        var download = Button("Download Hookshot Builder…");
+        var cancelDownload = Button("Cancel download");
+        Name("InstallDownloadHookshotButton", download);
+        Name("InstallDownloadStatus", downloadStatus);
+        Name("InstallCancelDownloadButton", cancelDownload);
+        cancelDownload.IsVisible = false;
+        bool offerDownload = HAL_HookshotDownload.ShouldOffer(HookshotGame.StableGameDirectory(),
+            preferences?.Value.DevGameDirectory, preferences?.Value.GameDirectory);
+        var downloadOffer = new StackPanel { Spacing = 8, IsVisible = offerDownload && (OperatingSystem.IsLinux() || OperatingSystem.IsWindows()), Children =
+        {
+            new TextBlock { Text = "No Hookshot installation was found. Download the official Hookshot Builder, or continue if you already have your own game files.", TextWrapping = TextWrapping.Wrap },
+            new TextBlock { Text = "The Builder installs Hookshot from your own game files. Return here afterward to build Hookshot-Dev for HAL's randomizer.", TextWrapping = TextWrapping.Wrap },
+            new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { download, cancelDownload } },
+            downloadStatus
+        } };
+        Name("InstallDownloadOffer", downloadOffer);
+        introduction.Children.Add(downloadOffer);
+        cancelDownload.Click += (_, _) => _downloadCancellation?.Cancel();
+        download.Click += async (_, _) =>
+        {
+            if (_downloadCancellation is not null) return;
+            using var cancellation = new CancellationTokenSource();
+            _downloadCancellation = cancellation;
+            download.IsEnabled = false; cancelDownload.IsVisible = true;
+            try
+            {
+                using var client = new HttpClient { Timeout = TimeSpan.FromMinutes(20) };
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("HookshotAdventureLauncher/0.9.01");
+                downloadStatus.Text = "Checking the official Hookshot release…";
+                var asset = await HAL_HookshotDownload.LatestAsync(client, OperatingSystem.IsWindows(), cancellation.Token);
+                var file = await owner.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+                {
+                    Title = "Save the official Hookshot Builder", SuggestedFileName = asset.Name
+                });
+                if (file is null) { downloadStatus.Text = "Download cancelled."; return; }
+                var destination = file.TryGetLocalPath();
+                if (string.IsNullOrWhiteSpace(destination)) throw new InvalidOperationException("Choose a local file location.");
+                int lastPercent = -1;
+                var progress = new Progress<double>(value =>
+                {
+                    int percent = (int)(value * 100);
+                    if (percent != lastPercent) { lastPercent = percent; downloadStatus.Text = $"Downloading official Hookshot Builder… {percent}%"; }
+                });
+                downloadStatus.Text = "Downloading official Hookshot Builder…";
+                await HAL_HookshotDownload.DownloadAsync(client, asset, destination, progress, cancellation.Token);
+                downloadStatus.Text = "Downloaded. Open the saved Hookshot Builder, install from your own game files, then return here and choose the existing installation.";
+            }
+            catch (OperationCanceledException) { downloadStatus.Text = "Download cancelled."; }
+            catch (Exception ex) { downloadStatus.Text = "Could not download Hookshot Builder: " + ex.Message; }
+            finally { _downloadCancellation = null; download.IsEnabled = true; cancelDownload.IsVisible = false; }
+        };
         var introCard = Card("01", "Introduction", "WELCOME", introduction);
         var setupBody = new StackPanel { Spacing = 18, Children = { sourceBody, _configuration, _setupStatus } };
         var configurationCard = Card("02", "Locations and build setup", "CONFIGURATION", setupBody);
@@ -155,7 +213,7 @@ public sealed class HAL_InstallView : UserControl
         _start.Classes.Add("primary");
         _start.Click += async (_, _) => await RunBuildAsync();
         _close.Click += (_, _) => { if (_running) _cancellation?.Cancel(); else owner.Close(); };
-        owner.Closing += (_, e) => { if (_running) { e.Cancel = true; _cancellation?.Cancel(); } };
+        owner.Closing += (_, e) => { _downloadCancellation?.Cancel(); if (_running) { e.Cancel = true; _cancellation?.Cancel(); } };
         _format.SelectionChanged += (_, _) =>
         {
             _source.Watermark = _format.SelectedIndex switch { 0 => "Choose your local .nup file", 2 => "Choose your existing Hookshot installation", _ => "Folder containing romfs and exefs" };
@@ -212,6 +270,8 @@ public sealed class HAL_InstallView : UserControl
 
     private (ProcessStartInfo info, string log, Action? install) CreateBuild()
     {
+        if (!File.Exists(Path.Combine(_root, "nx2", "make_game.py")))
+            throw new InvalidOperationException("HAL's Hookshot build tools are missing. Follow the HAL setup instructions to integrate a compatible Hookshot source checkout.");
         var workers = ShaderWorkers;
         var jobs = ParseWorkers(_jobs.Text, "Build jobs", 256) ?? 0;
         ProcessStartInfo info; string log; Action? install = null;

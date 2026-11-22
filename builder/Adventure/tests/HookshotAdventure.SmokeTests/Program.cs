@@ -47,6 +47,7 @@ try
     bool midoRestricted = false; try { HAL_MidoExperiment.Prepare(Path.Combine(root,"not-dev")); } catch (InvalidDataException) { midoRestricted = true; }
     AssertTest.True(midoRestricted, "research Mido overlay refuses an unapproved development directory");
     BombchuCapacityFixture.Check();
+    HAL_HookshotDownloadFixture.Check(root);
     using (var itemCatalog = System.Text.Json.JsonDocument.Parse("{\"catalog_hash\":\"fixture\",\"locations\":[{\"id\":\"1\",\"reward\":\"Item_Dungeon_Map\",\"resources\":[\"Banc/InsideTheDekuTree/map\"],\"eligible\":false}]}"))
     {
         var report = HAL_ItemPoolReport.Build(itemCatalog.RootElement);

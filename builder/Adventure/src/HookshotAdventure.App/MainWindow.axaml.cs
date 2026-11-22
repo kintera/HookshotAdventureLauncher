@@ -1620,7 +1620,10 @@ public partial class MainWindow : Window
     {
         try
         {
-            var dialog = new HAL_DevelopmentBuildDialog(FindSourceRoot(), _preferences,
+            string sourceRoot;
+            try { sourceRoot = FindSourceRoot(); }
+            catch (InvalidOperationException) { sourceRoot = AppContext.BaseDirectory; }
+            var dialog = new HAL_DevelopmentBuildDialog(sourceRoot, _preferences,
                 this.FindControl<TextBox>("DevSourceBox")!.Text ?? "",
                 this.FindControl<TextBox>("DevOutputBox")!.Text ?? _preferences.Value.DevGameDirectory,
                 this.FindControl<CheckBox>("HAL_ForceDevReinstallCheck")!.IsChecked == true,

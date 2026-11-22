@@ -99,7 +99,7 @@ This repository contains launcher source and a version-specific integration patc
 
 `./hookshot-dev.sh --builtin` opens the original Hookshot Builder. The launcher interface and randomizer preparation use C#; Hookshot's own build pipeline and save-editor backend still use Python. Detailed instructions, including build-tool setup and the local icon cache, are in the [Adventure documentation](builder/Adventure/README.md).
 
-The setup wizard offers an existing Hookshot installation with retained game files, a local `.nup`, or an extracted game folder. It can configure the language, build jobs, shader workers and retained objects. A separate development installation protects the existing installation and needs additional disk space. The launcher can prepare its Linux build tools and rebuild its local icon database; see the [installation and icon notes](builder/Adventure/README.md#game-installation-and-updates).
+The setup wizard offers an existing Hookshot installation with retained game files, a local `.nup`, or an extracted game folder. If no installation is detected, it can download the official Hookshot Builder; use that with your own game files, then return to HAL and choose the installed game as the source for Hookshot-Dev. The wizard can configure the language, build jobs, shader workers and retained objects. A separate development installation protects the existing installation and needs additional disk space. The launcher can prepare its Linux build tools and rebuild its local icon database; see the [installation and icon notes](builder/Adventure/README.md#game-installation-and-updates).
 
 ## Repository layout
 
