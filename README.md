@@ -1,3 +1,5 @@
+<img src="builder/Adventure/src/HookshotAdventure.App/Assets/HAL_hookshot.png" alt="HAL icon" width="144" align="right">
+
 # Hookshot Adventure Launcher
 
 **Version 0.9.01 alpha · C# / .NET / Avalonia**
