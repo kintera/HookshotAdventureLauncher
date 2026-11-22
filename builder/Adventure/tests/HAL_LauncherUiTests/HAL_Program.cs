@@ -582,7 +582,7 @@ internal static class HAL_Program
             }
             var settingsSections = window.FindControl<TabControl>("SettingsSections")!;
             var settingsHeaders = settingsSections.Items.OfType<TabItem>().Select(x => x.Header?.ToString()).ToArray();
-            Check(settingsHeaders.SequenceEqual(new[] { "Appearance", "Debug", "Reinstall", "Tools", "Tweaks", "Warnings & Errors" }) &&
+            Check(settingsHeaders.SequenceEqual(new[] { "Appearance", "Debug", "Reinstall", "Tools", "Tweaks", "Warnings & Errors", "Information" }) &&
                   window.FindControl<TabControl>("SettingsToolsSections") is not null &&
                   window.FindControl<TabControl>("TweaksSections") is not null &&
                   window.FindControl<RadioButton>("LaunchDevRadio") is not null &&
@@ -592,8 +592,18 @@ internal static class HAL_Program
                   window.FindControl<CheckBox>("A64DebugCheck") is not null &&
                   window.FindControl<CheckBox>("DebugKeyCheck") is not null,
                 "Settings follows Qt sections with nested Tools and Tweaks subtabs");
+            Check(window.FindControl<Button>("HAL_InformationGitHub")?.Tag as string == "https://github.com/kintera/HookshotAdventureLauncher" &&
+                  window.FindControl<Button>("HAL_InformationDiscord")?.Tag as string == "https://discord.gg/xETQwGr9W" &&
+                  window.FindControl<Button>("HAL_InformationHookshot")?.Tag as string == "https://git.notrexed.dev/Hookshot/Hookshot",
+                "Information links to HAL, its community, and the Hookshot project");
             Click(window, "SettingsButton");
             Pump();
+            settingsSections.SelectedItem = window.FindControl<TabItem>("HAL_InformationTab");
+            Pump();
+            Check(window.FindControl<Button>("HAL_InformationGitHub") is { IsEffectivelyVisible: true } &&
+                  window.FindControl<Button>("HAL_InformationDiscord") is { IsEffectivelyVisible: true } &&
+                  window.FindControl<Button>("HAL_InformationHookshot") is { IsEffectivelyVisible: true },
+                "Information tab displays the project and community links");
             Check(window.FindControl<TextBlock>("WarningTitle") is not null &&
                   window.FindControl<TextBox>("DevSourceBox") is not null &&
                   window.FindControl<Button>("RestoreCompressedBackupButton") is not null &&

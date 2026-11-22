@@ -694,6 +694,29 @@
               </StackPanel></Border>
               <Button Classes="raised" Content="Retry Checks" Click="RetryChecks_Click" HorizontalAlignment="Right"/>
             </StackPanel></TabItem>
+            <TabItem x:Name="HAL_InformationTab" Header="Information">
+              <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="12" Spacing="12">
+                  <TextBlock FontSize="18" FontWeight="Bold" Text="Hookshot Adventure Launcher"/>
+                  <TextBlock Classes="subtitle" TextWrapping="Wrap" Text="HAL helps you manage adventures and saves, customize your experience, and create experimental randomized adventures. Its randomizer is inspired by Ship of Harkinian."/>
+                  <Border Classes="panel" Padding="12">
+                    <StackPanel Spacing="7">
+                      <TextBlock FontWeight="SemiBold" Text="HAL project and community"/>
+                      <TextBlock Classes="subtitle" TextWrapping="Wrap" Text="Visit GitHub for documentation, updates, and the Discord community link."/>
+                      <Button x:Name="HAL_InformationGitHub" Classes="raised" HorizontalAlignment="Left" Content="Open HAL on GitHub" Tag="https://github.com/kintera/HookshotAdventureLauncher" Click="OpenInformationLink_Click"/>
+                      <Button x:Name="HAL_InformationDiscord" Classes="raised" HorizontalAlignment="Left" Content="Join the HAL Discord" Tag="https://discord.gg/xETQwGr9W" Click="OpenInformationLink_Click"/>
+                    </StackPanel>
+                  </Border>
+                  <Border Classes="panel" Padding="12">
+                    <StackPanel Spacing="7">
+                      <TextBlock FontWeight="SemiBold" Text="About Hookshot"/>
+                      <TextBlock Classes="subtitle" TextWrapping="Wrap" Text="Hookshot builds and runs the game on your PC using your own game files. HAL works alongside Hookshot and its builder."/>
+                      <Button x:Name="HAL_InformationHookshot" Classes="raised" HorizontalAlignment="Left" Content="Open the Hookshot project" Tag="https://git.notrexed.dev/Hookshot/Hookshot" Click="OpenInformationLink_Click"/>
+                    </StackPanel>
+                  </Border>
+                </StackPanel>
+              </ScrollViewer>
+            </TabItem>
           </TabControl>
         </StackPanel>
       </ScrollViewer>

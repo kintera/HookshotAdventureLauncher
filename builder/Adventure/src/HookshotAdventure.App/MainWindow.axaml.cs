@@ -186,6 +186,20 @@ public partial class MainWindow : Window
     }
 
     private void Status(string message) => this.FindControl<TextBlock>("StatusText")!.Text = message;
+
+    private async void OpenInformationLink_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string address }) return;
+        try
+        {
+            if (!await Launcher.LaunchUriAsync(new Uri(address)))
+                Status("Could not open the link. Please visit " + address);
+        }
+        catch (Exception ex)
+        {
+            Status("Could not open the link: " + ex.Message + " — " + address);
+        }
+    }
     private void Show(string name)
     {
         this.FindControl<Control>("LaunchNavigation")!.IsVisible = name is "AdventurePage" or "RandomizerPage" or "EnhancementsPage";
