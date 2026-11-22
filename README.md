@@ -6,7 +6,7 @@
 
 Hookshot Adventure Launcher brings profiles, save management, an in-place save editor, experimental randomizer settings, and visual customization together in one interface for Hookshot. Choose an adventure, review a save, and launch it from a desktop or Steam Deck-sized window.
 
-> **Alpha source update:** This is for testing, not a finished randomizer or a ready-to-run game download. Some checks and event rewards remain vanilla, full-game beatability is not established, and several features still need gameplay testing. Back up important saves before experimenting.
+> **0.9.01 alpha:** This is for testing, not a finished randomizer or a game download. Some checks and event rewards remain vanilla, full-game beatability is not established, and several features still need gameplay testing. Back up important saves before experimenting.
 
 The default branch contains the 0.9.01 alpha source. The earlier v0.8 source is retained on the `release/v0.8` branch and under `builder/qt/`.
 
@@ -69,9 +69,18 @@ Choose **Settings → Visual theme** to personalize the launcher. Your choice is
 
 The launcher also provides settings for game launches, shader and pipeline tools, and development build and shader worker counts. Its compact layouts are designed for desktop and Steam Deck-sized screens; the alpha still needs wider hardware testing.
 
-## Setup
+## Download and setup
 
-This repository contains launcher source and a version-specific integration patch; it does **not** contain the native Hookshot source tree, a built game, or game files. The documented source setup currently targets Linux and requires the .NET 10 SDK, Git, and Hookshot's own build requirements. A local Linux test AppImage passed Docker launcher and game-free build checks; it is not the final 0.9.01 package. Windows support is more experimental: a Windows package has not yet been integrated or tested. Steam Deck package installation has not been validated for this update.
+[Download 0.9.01 alpha](https://github.com/kintera/HookshotAdventureLauncher/releases/tag/v0.9.01-alpha)
+
+- **Linux x86-64:** Download the AppImage, make it executable (`chmod +x HookshotAdventure-0.9.01-alpha-Linux-x86_64.AppImage`), then run it. HAL updates are manual in this alpha.
+- **Windows x86-64 (experimental):** Download and extract the experimental ZIP, then run `HookshotAdventure.App.exe`. The launcher has been cross-built but has not yet been tested on Windows. Building Hookshot-Dev requires additional Windows build tools; see the included `READ-ME-FIRST.txt` and `CONTRIBUTING.md`.
+
+Both packages require your own compatible game files; neither contains a game dump or built game. Randomized adventures require a HAL-compatible Hookshot-Dev build. Updating that build can remove the randomizer hooks, so rebuild it with HAL before playing randomized adventures. Steam Deck installation still needs wider testing.
+
+### Building from source
+
+This repository contains launcher source and a version-specific integration patch; it does **not** contain the native Hookshot source tree, a built game, or game files. The source setup below targets Linux and requires the .NET 10 SDK, Git, and Hookshot's own build requirements.
 
 1. Obtain a fresh Hookshot v3.0.0 source checkout at the supported revision, along with your own compatible game files:
 

@@ -1,4 +1,4 @@
-# 0.9.01 alpha — source update
+# 0.9.01 alpha
 
 - Adds the C# Adventure launcher, adventure profiles, save editor, local icon generation, and experimental randomizer and cosmetic work.
 - Shows the Silver or Golden Scale beneath the Hylian Shield, with staged progression choices in the save editor.
@@ -7,5 +7,6 @@
 - Randomized adventures can hold up to 20 bombchus without a bomb bag. An isolated chest grant, item use, and save/reload were tested; bag upgrades and larger bundles remain to be checked.
 - The location list is scanned from a selected game on the local PC. No game-derived catalog is included.
 - This is an alpha: full-game reachability is not proven, reward shuffle coverage is partial, and save-editor and gameplay interactions need further testing. Back up saves.
-- This source update is not yet a packaged download. A local Linux test AppImage opened both launcher interfaces in Ubuntu 22.04 Docker and passed game-free normal and AMD FSR 4 build checks; it uses a placeholder update source and is not the final 0.9.01 image.
-- Windows support is more experimental: a Windows package has not yet been integrated or tested. Steam Deck package installation also needs validation.
+- [Download the 0.9.01 alpha release](https://github.com/kintera/HookshotAdventureLauncher/releases/tag/v0.9.01-alpha): Linux AppImage, experimental Windows ZIP, and checksums.
+- The Linux AppImage opened both launcher interfaces in Ubuntu 22.04 Docker and passed game-free normal and AMD FSR 4 build-input checks. Updates are manual in this alpha.
+- The Windows ZIP is cross-built and has not been tested on Windows. Steam Deck package installation also needs validation.
