@@ -10,7 +10,7 @@ Hookshot Adventure Launcher brings profiles, save management, an in-place save e
 
 The default branch contains the 0.9.01 alpha source. The earlier v0.8 source is retained on the `release/v0.8` branch and under `builder/qt/`.
 
-[Set up the launcher](#setup) · [Save editor](#save-editor) · [Randomizer](#randomizer) · [Enhancements](#enhancements) · [Themes](#themes) · [Testing and limitations](#testing-and-limitations)
+[Set up the launcher](#setup) · [Save editor](#save-editor) · [Randomizer](#randomizer) · [Enhancements](#enhancements) · [Themes](#themes) · [Testing and limitations](#testing-and-limitations) · [Report an issue](#reporting-an-issue)
 
 ## Adventures and saves
 
@@ -131,6 +131,20 @@ builder/qt/                                    Earlier v0.8 launcher source
 Run `./hookshot-dev.sh --test` from the integrated Hookshot checkout for the C# core smoke tests. The [testing handoff](builder/Adventure/docs/TESTING_HANDOFF.md) records known issues and gameplay scenarios; game-free tests do not establish compatibility or beatability. The original v0.8 source remains in `builder/qt/` for reference. Release notes for this update are in [0.9.01 alpha](docs/RELEASE_0.9.01.md), and the [earlier release notes](docs/RELEASE_NOTES.md) remain available.
 
 For the planned Hookshot 3.0.2 port, see the [HAL 0.9.02 handoff](builder/Adventure/docs/HAL_0.9.02_HOOKSHOT_3.0.2_HANDOFF.md).
+
+
+## Reporting an issue
+
+Please report problems through [GitHub Issues](https://github.com/kintera/HookshotAdventureLauncher/issues) and/or the report-issue area of our [Discord server](https://discord.gg/xETQwGr9W). Include your HAL and Hookshot versions, operating system and GPU, what happened, and the steps and location needed to reproduce it. For randomizer problems, include the seed and relevant settings.
+
+If possible, capture an F9 gameplay trace around the problem:
+
+1. In HAL, enable **Settings → Debug → Debug Key (F9 gameplay trace)** before launching the game.
+2. Press **F9** just before reproducing the issue to start recording.
+3. Reproduce the issue, then press **F9** again to stop recording.
+4. Find the timestamped `gameplay_trace_*.log` file in the selected game installation's `logs/` folder. Attach it to your GitHub issue and/or Discord report. If available, include `logs/hookshot_log.txt` as well.
+
+If the game crashes or you cannot capture a trace, please still report what happened and include any available log. Review logs for personal information before sharing, and do not upload game files, saves, or extracted game resources.
 
 ## Game data and license
 
