@@ -130,6 +130,8 @@ builder/qt/                                    Earlier v0.8 launcher source
 
 Run `./hookshot-dev.sh --test` from the integrated Hookshot checkout for the C# core smoke tests. The [testing handoff](builder/Adventure/docs/TESTING_HANDOFF.md) records known issues and gameplay scenarios; game-free tests do not establish compatibility or beatability. The original v0.8 source remains in `builder/qt/` for reference. Release notes for this update are in [0.9.01 alpha](docs/RELEASE_0.9.01.md), and the [earlier release notes](docs/RELEASE_NOTES.md) remain available.
 
+For the planned Hookshot 3.0.2 port, see the [HAL 0.9.02 handoff](builder/Adventure/docs/HAL_0.9.02_HOOKSHOT_3.0.2_HANDOFF.md).
+
 ## Game data and license
 
 Game files, saves, generated binaries, extracted textures, and caches stay on the player's PC and are not distributed by this repository. The launcher is GPL-3.0; see [LICENSE](LICENSE) and the relevant third-party notices. Hookshot and game names are used descriptively; this project is not affiliated with Nintendo.
