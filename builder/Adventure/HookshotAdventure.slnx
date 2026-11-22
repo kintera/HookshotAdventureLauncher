@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="src/HookshotAdventure.Core/HookshotAdventure.Core.csproj" />
+  <Project Path="src/HookshotAdventure.App/HookshotAdventure.App.csproj" />
+  <Project Path="tests/HookshotAdventure.SmokeTests/HookshotAdventure.SmokeTests.csproj" />
+</Solution>

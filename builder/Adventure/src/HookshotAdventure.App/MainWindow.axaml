@@ -1,0 +1,705 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:HookshotAdventure.App"
+        x:Class="HookshotAdventure.App.MainWindow"
+        Title="Hookshot — Adventure launcher" Width="1000" Height="640"
+        Icon="avares://HookshotAdventure.App/Assets/HAL_hookshot.ico"
+        MinWidth="750" MinHeight="475" WindowStartupLocation="Manual">
+  <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="14,10,14,9" RowSpacing="7">
+    <!-- Qt v0.8: small brand at left; settings and ONE readiness pill in top-right. -->
+    <Grid ColumnDefinitions="38,*,112,152" ColumnSpacing="10" RowDefinitions="Auto,Auto" Height="44">
+      <Border Grid.RowSpan="2" Width="38" Height="38" Classes="brandMark" Background="{DynamicResource RaisedBrush}" CornerRadius="8" BorderBrush="{DynamicResource RimBrush}" BorderThickness="1">
+        <Image Source="avares://HookshotAdventure.App/Assets/HAL_hookshot.png" Width="34" Height="34"/>
+      </Border>
+      <TextBlock Grid.Column="1" Grid.Row="0" FontSize="18" FontWeight="ExtraBold" Text="HOOKSHOT" Foreground="{DynamicResource HeadingBrush}" VerticalAlignment="Bottom"/>
+      <TextBlock Grid.Column="1" Grid.Row="1" FontSize="11" Classes="subtitle" Text="Adventure launcher  /  Game management" VerticalAlignment="Top"/>
+      <Button x:Name="SettingsButton" Grid.Column="2" Grid.RowSpan="2" Classes="raised headerButton" Content="Settings" Click="Settings_Click" Width="112" Height="30" Padding="9,4" VerticalAlignment="Center"/>
+      <Border Grid.Column="3" Grid.RowSpan="2" Background="{DynamicResource RaisedBrush}" BorderBrush="{DynamicResource RimBrush}" BorderThickness="1" CornerRadius="7" Width="152" Height="30" VerticalAlignment="Center">
+        <TextBlock x:Name="ReadinessText" Text="Checking installation…" TextAlignment="Center" VerticalAlignment="Center" FontSize="10" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+      </Border>
+    </Grid>
+    <StackPanel Grid.Row="1" x:Name="LaunchNavigation" Orientation="Horizontal" Spacing="4" Margin="6,0">
+      <Button Classes="raised nav" Content="Adventures" Click="Adventure_Click"/>
+      <Button Classes="raised nav" Content="Randomizer" Click="Randomizer_Click"/>
+      <Button Classes="raised nav" Content="Enhancements" Click="Enhancements_Click"/>
+    </StackPanel>
+    <Grid Grid.Row="2">
+      <ScrollViewer x:Name="AdventurePage" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="12,10,12,10" Spacing="10">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <StackPanel Grid.Column="0" Spacing="3">
+              <TextBlock Text="CHOOSE YOUR ADVENTURE" FontWeight="Bold" FontSize="19"/>
+              <TextBlock Classes="subtitle" FontSize="11" Text="Three shortcuts. Select a save to review progress before launching."/>
+            </StackPanel>
+            <Button Grid.Column="1" Classes="raised" Content="Manage profiles" Click="Manage_Click" MinWidth="125" Padding="12,7" VerticalAlignment="Top"/>
+          </Grid>
+          <!-- Individual floating cards, not a large outer framed panel. -->
+          <StackPanel Spacing="5">
+          <!-- Shortcut 1: 156x88 inset screenshot; centered inventory preview; action at right. -->
+          <Border Classes="profileRow" Margin="10,3,10,8">
+            <Grid ColumnDefinitions="156,*,120" ColumnSpacing="12" MinHeight="90">
+              <Border Grid.Column="0" Classes="previewWell" Width="156" Height="88" Padding="3">
+                <Grid>
+                  <Image x:Name="SlotPreview0" Stretch="UniformToFill"/>
+                  <TextBlock x:Name="SlotNoPreview0" Text="No save image" Classes="microLabel" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                </Grid>
+              </Border>
+              <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Text="01" Foreground="{DynamicResource AccentBrush}" FontWeight="Bold" Width="25" FontSize="11" VerticalAlignment="Center"/>
+                  <TextBlock x:Name="SlotName0" Text="New Adventure" FontSize="15" FontWeight="Bold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBlock x:Name="SlotDesc0" Text="Create a new adventure" Classes="subtitle" FontSize="11"/>
+                <TextBlock x:Name="SlotSummary0" Text="No save data" IsVisible="False"/>
+                <ContentControl x:Name="SlotCompact0" Height="58" HorizontalAlignment="Stretch"/>
+              </StackPanel>
+              <StackPanel Grid.Column="2" Spacing="7" VerticalAlignment="Top" HorizontalAlignment="Right">
+                <Border Classes="saveBadge" Width="108" Padding="7,4" IsVisible="False" x:Name="SlotBadgeFrame0">
+                  <TextBlock x:Name="SlotKind0" Text="Vanilla Save" FontSize="10" TextAlignment="Center" Foreground="#d1cbd5"/>
+                </Border>
+                <Button x:Name="SlotAction0" Classes="raised" Content="Create" Width="108" Height="34" Padding="10,5" Click="Slot0_Click"/>
+              </StackPanel>
+            </Grid>
+          </Border>
+          <!-- Shortcut 2: 156x88 inset screenshot; centered inventory preview; action at right. -->
+          <Border Classes="profileRow" Margin="10,3,10,8">
+            <Grid ColumnDefinitions="156,*,120" ColumnSpacing="12" MinHeight="90">
+              <Border Grid.Column="0" Classes="previewWell" Width="156" Height="88" Padding="3">
+                <Grid>
+                  <Image x:Name="SlotPreview1" Stretch="UniformToFill"/>
+                  <TextBlock x:Name="SlotNoPreview1" Text="No save image" Classes="microLabel" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                </Grid>
+              </Border>
+              <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Text="02" Foreground="{DynamicResource AccentBrush}" FontWeight="Bold" Width="25" FontSize="11" VerticalAlignment="Center"/>
+                  <TextBlock x:Name="SlotName1" Text="New Adventure" FontSize="15" FontWeight="Bold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBlock x:Name="SlotDesc1" Text="Create a new adventure" Classes="subtitle" FontSize="11"/>
+                <TextBlock x:Name="SlotSummary1" Text="No save data" IsVisible="False"/>
+                <ContentControl x:Name="SlotCompact1" Height="58" HorizontalAlignment="Stretch"/>
+              </StackPanel>
+              <StackPanel Grid.Column="2" Spacing="7" VerticalAlignment="Top" HorizontalAlignment="Right">
+                <Border Classes="saveBadge" Width="108" Padding="7,4" IsVisible="False" x:Name="SlotBadgeFrame1">
+                  <TextBlock x:Name="SlotKind1" Text="Vanilla Save" FontSize="10" TextAlignment="Center" Foreground="#d1cbd5"/>
+                </Border>
+                <Button x:Name="SlotAction1" Classes="raised" Content="Create" Width="108" Height="34" Padding="10,5" Click="Slot1_Click"/>
+              </StackPanel>
+            </Grid>
+          </Border>
+          <!-- Shortcut 3: 156x88 inset screenshot; centered inventory preview; action at right. -->
+          <Border Classes="profileRow" Margin="10,3,10,8">
+            <Grid ColumnDefinitions="156,*,120" ColumnSpacing="12" MinHeight="90">
+              <Border Grid.Column="0" Classes="previewWell" Width="156" Height="88" Padding="3">
+                <Grid>
+                  <Image x:Name="SlotPreview2" Stretch="UniformToFill"/>
+                  <TextBlock x:Name="SlotNoPreview2" Text="No save image" Classes="microLabel" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                </Grid>
+              </Border>
+              <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Text="03" Foreground="{DynamicResource AccentBrush}" FontWeight="Bold" Width="25" FontSize="11" VerticalAlignment="Center"/>
+                  <TextBlock x:Name="SlotName2" Text="New Adventure" FontSize="15" FontWeight="Bold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBlock x:Name="SlotDesc2" Text="Create a new adventure" Classes="subtitle" FontSize="11"/>
+                <TextBlock x:Name="SlotSummary2" Text="No save data" IsVisible="False"/>
+                <ContentControl x:Name="SlotCompact2" Height="58" HorizontalAlignment="Stretch"/>
+              </StackPanel>
+              <StackPanel Grid.Column="2" Spacing="7" VerticalAlignment="Top" HorizontalAlignment="Right">
+                <Border Classes="saveBadge" Width="108" Padding="7,4" IsVisible="False" x:Name="SlotBadgeFrame2">
+                  <TextBlock x:Name="SlotKind2" Text="Vanilla Save" FontSize="10" TextAlignment="Center" Foreground="#d1cbd5"/>
+                </Border>
+                <Button x:Name="SlotAction2" Classes="raised" Content="Create" Width="108" Height="34" Padding="10,5" Click="Slot2_Click"/>
+              </StackPanel>
+            </Grid>
+          </Border>
+          </StackPanel>
+        </StackPanel>
+      </ScrollViewer>
+
+      <Grid x:Name="RandomizerPage" IsVisible="False" RowDefinitions="*,Auto">
+        <ScrollViewer Grid.Row="0">
+          <StackPanel Spacing="12" Margin="12,10">
+          <TextBlock Classes="heading" Text="Randomizer Settings"/>
+          <TextBlock Classes="subtitle" Text="Defaults apply when creating a new randomized adventure. Existing seeds stay fixed. Unsupported options remain disabled." TextWrapping="Wrap"/>
+          <TabControl x:Name="RandomizerCategories" TabStripPlacement="Left">
+            <TabControl.Styles>
+              <Style Selector="TabItem">
+                <Setter Property="FontSize" Value="13"/>
+                <Setter Property="Padding" Value="8,4"/>
+                <Setter Property="MinHeight" Value="28"/>
+              </Style>
+            </TabControl.Styles>
+            <TabItem Header="General"><StackPanel Margin="10" Spacing="8">
+              <TextBlock Classes="kicker" Text="GENERAL"/>
+              <Button Content="Randomize all settings" Classes="raised" HorizontalAlignment="Left" IsEnabled="False" ToolTip.Tip="Not available until all randomized settings can be validated together."/>
+              <TextBlock Classes="subtitle" Text="Spoiler file: not yet available"/>
+              <TextBlock Text="Seed settings" FontWeight="SemiBold" Margin="0,6,0,0"/>
+              <Grid ColumnDefinitions="145,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="8">
+                <TextBlock Text="Starting age" VerticalAlignment="Center"/>
+                <ComboBox Grid.Column="1" IsEnabled="False" Height="30">
+                  <ComboBoxItem Content="Child Link" IsSelected="True"/><ComboBoxItem Content="Adult Link"/>
+                </ComboBox>
+                <TextBlock Grid.Row="1" Text="Preset" VerticalAlignment="Center"/>
+                <ComboBox Grid.Row="1" Grid.Column="1" IsEnabled="False" Height="30">
+                  <ComboBoxItem Content="Custom" IsSelected="True"/><ComboBoxItem Content="Beginner"/><ComboBoxItem Content="Standard"/><ComboBoxItem Content="Tournament"/>
+                </ComboBox>
+              </Grid>
+              <TextBlock x:Name="RandomizerCoverageText" Classes="subtitle" Text="Full-game chest placement is experimental. Some checks remain vanilla; full-game reachability is not verified." TextWrapping="Wrap"/>
+              <TextBlock Classes="subtitle" Text="Eligible chest rewards are shuffled once each; the reward ledger prevents duplicate items." TextWrapping="Wrap"/>
+              <TextBlock Text="Randomizer enhancements" FontWeight="SemiBold" Margin="0,6,0,0"/>
+              <CheckBox x:Name="RandomRupeeNamesCheck" Content="Random rupee names (not yet available)" IsEnabled="False"/>
+            </StackPanel></TabItem>
+            <TabItem Header="Logic/Access"><StackPanel Margin="10" Spacing="8">
+              <TextBlock Classes="kicker" Text="LOGIC / ACCESS"/>
+              <TextBlock FontWeight="SemiBold" Text="Placement logic"/>
+              <TextBlock Classes="subtitle" Text="When the opening checks are available, safeguards place the Kokiri Sword in Kokiri Forest and the Slingshot in Kokiri Forest or a reviewed Deku Tree chest. Starting items satisfy their corresponding requirements. The full-game solver is not yet complete." TextWrapping="Wrap"/>
+              <TextBlock FontWeight="SemiBold" Text="Area access" Margin="0,6,0,0"/>
+              <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="4">
+                <CheckBox Grid.Row="0" Grid.Column="0" x:Name="OpenKokiriForestCheck" Content="Open forest (Experimental)"/>
+                <CheckBox Grid.Row="0" Grid.Column="1" x:Name="OpenDekuTreeCheck" Content="Open Deku Tree (Experimental)"/>
+                <CheckBox Grid.Row="1" Grid.Column="0" x:Name="OpenTimeDoorCheck" Content="Open Door of Time (Experimental)"/>
+                <CheckBox Grid.Row="1" Grid.Column="1" x:Name="OpenJabuCheck" Content="Open Jabu-Jabu (Experimental)"/>
+                <CheckBox Grid.Row="2" Grid.Column="0" x:Name="SkipTrialsCheck" Content="Skip trials (Experimental)"/>
+              </Grid>
+              <TextBlock Classes="subtitle" Text="Open forest and Open Deku Tree are experimental new-save settings. The forest exit was crossed with both enabled; each option and the Deku entrance still need separate testing. Placement logic still uses closed-forest requirements." TextWrapping="Wrap"/>
+              <TextBlock Classes="subtitle" Text="Door of Time, Jabu-Jabu and trials are experimental development tests. Use a backup save: these may change story flags and may not open the gate. Apply on next launch." TextWrapping="Wrap"/>
+            </StackPanel></TabItem>
+            <TabItem Header="Dungeons"><StackPanel Margin="10" Spacing="8">
+              <TextBlock Classes="kicker" Text="DUNGEON ITEMS"/>
+              <TextBlock Text="Maps/Compasses"/>
+              <ComboBox x:Name="StartingMapsModePicker" Height="30" Width="220" HorizontalAlignment="Left" SelectionChanged="StartingMapsMode_Changed">
+                <ComboBoxItem Content="Vanilla" Tag="vanilla"/><ComboBoxItem Content="Start With" Tag="start_with"/>
+              </ComboBox>
+              <TextBlock Classes="subtitle" Text="Start With grants reviewed maps and compasses from scanned dungeons; their original chest rewards leave the pool. Unreviewed dungeon items remain vanilla." TextWrapping="Wrap"/>
+            </StackPanel></TabItem>
+            <TabItem Header="Shuffles"><StackPanel Margin="10" Spacing="7">
+              <TextBlock Text="Chest rewards — active for randomized seeds" FontWeight="SemiBold"/>
+              <Grid ColumnDefinitions="250,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="7" ColumnSpacing="0">
+                <CheckBox x:Name="HeartPiecesCheck" Content="Heart Pieces (experimental)" ToolTip.Tip="Adds reviewed heart-piece chests to the pool." Checked="RandomizerLocations_Refresh" Unchecked="RandomizerLocations_Refresh"/>
+                <CheckBox Grid.Column="1" x:Name="SariaFairyOcarinaShuffleCheck" Content="Saria's Fairy Ocarina (experimental)" ToolTip.Tip="Exchanges Saria's Fairy Ocarina with a rupee chest; gameplay verification is pending."/>
+                <CheckBox Grid.Row="1" x:Name="NpcQuestRewardsCheck" Content="NPC and quest rewards (experimental)" ToolTip.Tip="Currently exchanges the Lost Woods target first-clear reward with a rupee chest. Gameplay verification is pending."/>
+                <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8">
+                  <TextBlock Text="Songs" VerticalAlignment="Center"/>
+                  <ComboBox x:Name="SongShufflePicker" Width="170" IsEnabled="False" ToolTip.Tip="Song shuffle is not implemented yet.">
+                    <ComboBoxItem Content="Vanilla" Tag="vanilla" IsSelected="True"/>
+                    <ComboBoxItem Content="Song locations" Tag="song_locations"/>
+                    <ComboBoxItem Content="Anywhere" Tag="anywhere"/>
+                  </ComboBox>
+                </StackPanel>
+                <CheckBox Grid.Row="3" Content="Shops" IsEnabled="False"/>
+                <CheckBox Grid.Row="4" x:Name="SkulltulaRewardsCheck" Content="Gold Skulltula rewards (experimental)" ToolTip.Tip="Exchanges the five one-time House rewards with rupee chests. Gameplay verification is pending." Checked="RandomizerLocations_Refresh" Unchecked="RandomizerLocations_Refresh"/>
+                <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                  <TextBlock Text="Maximum required" VerticalAlignment="Center"/>
+                  <ComboBox x:Name="MaximumSkulltulasCount" Width="160" ToolTip.Tip="The requested logic maximum; generated seeds do not enforce it yet.">
+                    <ComboBoxItem Content="0" Tag="0"/><ComboBoxItem Content="10" Tag="10"/><ComboBoxItem Content="20" Tag="20"/>
+                    <ComboBoxItem Content="30" Tag="30"/><ComboBoxItem Content="40" Tag="40"/><ComboBoxItem Content="50" Tag="50"/>
+                    <ComboBoxItem Content="100" Tag="100"/>
+                  </ComboBox>
+                </StackPanel>
+                <CheckBox Grid.Row="5" Content="Scrub rewards" IsEnabled="False"/>
+              </Grid>
+              <TextBlock Classes="subtitle" Text="Song shuffle is not available yet. NPC rewards currently cover the Lost Woods target. Skulltula House rewards exchange with rupee chests only; the maximum is saved but not enforced yet. Event reward gameplay verification is pending." TextWrapping="Wrap"/>
+            </StackPanel></TabItem>
+            <TabItem Header="Time Savers"><StackPanel Margin="10" Spacing="8">
+              <TextBlock Classes="kicker" Text="TIME SAVERS"/>
+              <TextBlock Classes="subtitle" Text="These shared Hookshot-Dev enhancements apply on the next launch. Other time savers are not implemented yet." TextWrapping="Wrap"/>
+              <CheckBox x:Name="RandomizerSkipOpeningCheck" Content="Skip opening" Checked="RandomizerTimeSaver_Changed" Unchecked="RandomizerTimeSaver_Changed"/>
+              <CheckBox x:Name="RandomizerSkipFirstOwlCheck" Content="Skip Owl" Checked="RandomizerTimeSaver_Changed" Unchecked="RandomizerTimeSaver_Changed" ToolTip.Tip="Player-initiated owl travel conversations remain available."/>
+              <CheckBox x:Name="RandomizerFastTextCheck" Content="Fast text (instant)" ToolTip.Tip="Use instant text when launching Hookshot-Dev. When off, the game's Text speed setting applies."/>
+            </StackPanel></TabItem>
+            <TabItem Header="Starting Inventory"><ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="10" Spacing="7">
+              <TextBlock Classes="subtitle" Text="Starting items require an updated Hookshot-Dev build. Shuffled rewards are replaced with blue rupees. Bomb Bag, Boomerang and Lens require Childhood or Full Game scope and are experimental; the shield's shop and vanilla chests remain unchanged." TextWrapping="Wrap"/>
+              <CheckBox x:Name="StartingSwordCheck" Content="Kokiri Sword"/><CheckBox x:Name="StartingSlingshotCheck" Content="Slingshot"/>
+              <CheckBox x:Name="StartingBombBagCheck" Content="Bomb Bag (experimental)"/><CheckBox x:Name="StartingBoomerangCheck" Content="Boomerang (experimental)"/><CheckBox x:Name="StartingLensCheck" Content="Lens of Truth (experimental)"/>
+              <CheckBox x:Name="StartingShieldCheck" Content="Deku Shield (experimental)"/><CheckBox x:Name="StartingOcarinaCheck" Content="Fairy Ocarina (experimental)"/>
+              <TextBlock Text="Starting songs (experimental)" FontWeight="SemiBold"/>
+              <TextBlock Classes="subtitle" Text="Song quest rewards stay vanilla. Saria's Fairy Ocarina leaves its source when its experimental shuffle is enabled." TextWrapping="Wrap"/>
+              <WrapPanel x:Name="StartingSongsPanel" ItemWidth="220" Orientation="Horizontal"/>
+              <TextBlock Text="Starting consumables (experimental)" FontWeight="SemiBold"/>
+              <TextBlock x:Name="StartingConsumablesHelp" Classes="subtitle" Text="Counts are minimums granted once per new save. A starting slingshot includes a full 30-seed bag; sticks and nuts include a small bag, and bombs require Starting Bomb Bag." TextWrapping="Wrap"/>
+              <Grid ColumnDefinitions="Auto,90,Auto,90" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="6">
+                <TextBlock Text="Sticks" VerticalAlignment="Center"/><NumericUpDown Grid.Column="1" x:Name="StartingSticksCount" Minimum="0" Maximum="10" Value="0" Increment="1"/>
+                <TextBlock Grid.Column="2" Text="Nuts" VerticalAlignment="Center"/><NumericUpDown Grid.Column="3" x:Name="StartingNutsCount" Minimum="0" Maximum="20" Value="0" Increment="1"/>
+                <TextBlock Grid.Row="1" Text="Seeds" VerticalAlignment="Center"/><NumericUpDown Grid.Row="1" Grid.Column="1" x:Name="StartingSeedsCount" Minimum="0" Maximum="30" Value="0" Increment="1"/>
+                <TextBlock Grid.Row="1" Grid.Column="2" Text="Bombs" VerticalAlignment="Center"/><NumericUpDown Grid.Row="1" Grid.Column="3" x:Name="StartingBombsCount" Minimum="0" Maximum="20" Value="0" Increment="1"/>
+              </Grid>
+            </StackPanel></ScrollViewer></TabItem>
+            <TabItem Header="Locations"><Grid Margin="10" RowDefinitions="Auto,Auto,*,Auto" RowSpacing="6">
+              <TextBlock x:Name="RandomizerLocationCoverage" Classes="subtitle" Text="Location catalog" TextWrapping="Wrap"/>
+              <Grid Grid.Row="1" ColumnDefinitions="3*,1.5*,Auto" Margin="4,0,18,0">
+                <TextBlock Text="Location" FontWeight="Bold"/><TextBlock Grid.Column="1" Text="Vanilla reward" FontWeight="Bold"/><TextBlock Grid.Column="2" Text="Status" FontWeight="Bold" Margin="8,0,8,0"/>
+              </Grid>
+              <Border Grid.Row="2" Classes="panel" Padding="5" MinHeight="290">
+                <TreeView x:Name="RandomizerLocationsTree" MinHeight="280" MaxHeight="390"/>
+              </Border>
+              <CheckBox x:Name="EditLocationExclusionsCheck" Grid.Row="3" Content="Edit individual check exclusions (unchecked checks receive filler only)" Checked="RandomizerLocations_Refresh" Unchecked="RandomizerLocations_Refresh"/>
+            </Grid></TabItem>
+          </TabControl>
+          </StackPanel>
+        </ScrollViewer>
+        <StackPanel x:Name="RandomizerActionFooter" Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="12,5,12,8">
+          <Button x:Name="SaveRandomizerButton" Classes="raised" Content="Save preferences" Click="SaveRandomizer_Click" MinWidth="170" MinHeight="40"/>
+          <Button x:Name="CreateRandomizedButton" Classes="raised primary" Content="Create randomized adventure…" Click="RandomizerCreate_Click" MinWidth="235" MinHeight="40"/>
+        </StackPanel>
+      </Grid>
+
+      <ScrollViewer x:Name="EnhancementsPage" IsVisible="False">
+        <StackPanel Spacing="12" Margin="12,10">
+          <TextBlock Classes="heading" Text="Enhancements"/>
+          <TabControl x:Name="EnhancementCategories">
+            <TabItem Header="Skips &amp; Speed-ups"><ScrollViewer><StackPanel x:Name="EnhancementEditor" Margin="8" Spacing="6">
+              <StackPanel.Styles>
+                <Style Selector="CheckBox"><Setter Property="FontSize" Value="12"/><Setter Property="Margin" Value="0,1"/></Style>
+              </StackPanel.Styles>
+              <TextBlock Classes="subtitle" FontSize="11" Text="Applies to randomized profiles on next launch." TextWrapping="Wrap"/>
+              <TextBlock x:Name="EnhancementInstallHint" Classes="subtitle" FontSize="11" Text="Select Hookshot-Dev in Settings → Game Launch to edit skips." TextWrapping="Wrap"/>
+              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                <StackPanel Spacing="6">
+                  <Border Classes="panel" Padding="8"><StackPanel Spacing="4">
+                    <TextBlock FontWeight="SemiBold" Text="Cutscenes"/>
+                    <StackPanel Orientation="Horizontal" Spacing="5"><Button x:Name="EnhancementsAllButton" Classes="raised" Content="All" Click="EnhancementsAll_Click" Padding="10,5"/><Button x:Name="EnhancementsNoneButton" Classes="raised" Content="None" Click="EnhancementsNone_Click" Padding="10,5"/></StackPanel>
+                    <CheckBox x:Name="SkipOpeningCheck" Content="Skip Intro" Checked="EnhancementTimeSaver_Changed" Unchecked="EnhancementTimeSaver_Changed"/>
+                    <CheckBox x:Name="SkipGreatDekuCheck" Content="Great Deku Skips"/>
+                    <CheckBox x:Name="SkipSwordCutsceneCheck" Content="Kokiri Sword Chest"/>
+                    <CheckBox x:Name="SkipEntranceCutscenesCheck" Content="Skip Entrance Cutscenes"/>
+                    <CheckBox x:Name="SkipBossIntroductionsCheck" Content="Skip Boss Introductions" ToolTip.Tip="Currently skips Gohma's introduction; other bosses are not yet supported."/>
+                    <CheckBox x:Name="SkipFirstOwlCheck" Content="Skip Owl" Checked="EnhancementTimeSaver_Changed" Unchecked="EnhancementTimeSaver_Changed" ToolTip.Tip="Player-initiated owl travel conversations remain available."/>
+                  </StackPanel></Border>
+                  <Border Classes="panel" Padding="8"><StackPanel Spacing="4">
+                    <TextBlock FontWeight="SemiBold" Text="Text"/>
+                    <CheckBox x:Name="SkipTutorialCheck" Content="Skip Tutorial Tips"/>
+                  </StackPanel></Border>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6">
+                  <Border Classes="panel" Padding="8"><StackPanel Spacing="4">
+                    <TextBlock FontWeight="SemiBold" Text="First Entrances"/>
+                    <CheckBox x:Name="SkipDekuEntranceCheck" Content="Great Deku Tree"/>
+                  </StackPanel></Border>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Spacing="6">
+                  <Border Classes="panel" Padding="8"><StackPanel Spacing="4">
+                    <TextBlock FontWeight="SemiBold" Text="Misc"/>
+                    <CheckBox x:Name="EnhancementChildStealthCheck" Content="Skip Child Stealth" ToolTip.Tip="Grants Zelda's Letter and Zelda's Lullaby once per save; requires a rebuilt Hookshot-Dev runtime."/>
+                  </StackPanel></Border>
+                </StackPanel>
+              </Grid>
+              <Button Classes="raised primary" Content="Save skip settings" HorizontalAlignment="Left" Click="SaveEnhancementSettings_Click"/>
+            </StackPanel></ScrollViewer></TabItem>
+            <TabItem Header="Cosmetics"><StackPanel Margin="12" Spacing="10">
+              <TextBlock Classes="subtitle" Text="Choose a swatch to set a custom tunic colour. Enable Custom cosmetics to use these settings." TextWrapping="Wrap"/>
+              <Border Classes="panel" Padding="10"><StackPanel Spacing="8">
+                <CheckBox x:Name="CustomCosmeticsCheck" Content="Custom cosmetics" HorizontalAlignment="Left"/>
+                <Grid ColumnDefinitions="110,110,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="7">
+                  <TextBlock Grid.Row="0" Grid.Column="1" Text="Color" FontWeight="SemiBold"/>
+                  <TextBlock Grid.Row="0" Grid.Column="2" Text="Color mode" FontWeight="SemiBold"/>
+                  <TextBlock Grid.Row="1" Text="Kokiri Tunic" VerticalAlignment="Center"/>
+                  <Button x:Name="KokiriTunicColor" Grid.Row="1" Grid.Column="1" MinWidth="110" Height="32" Tag="Kokiri" Click="PickTunicColor_Click"/>
+                  <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Horizontal" Spacing="12">
+                    <RadioButton x:Name="KokiriTunicLocked" GroupName="KokiriTunicMode" Content="Locked"/>
+                    <RadioButton x:Name="KokiriTunicRandomLaunch" GroupName="KokiriTunicMode" Content="Randomize on launch"/>
+                    <RadioButton x:Name="KokiriTunicSeedRandom" GroupName="KokiriTunicMode" Content="Seed randomize"/>
+                  </StackPanel>
+                  <TextBlock Grid.Row="2" Text="Goron Tunic" VerticalAlignment="Center"/>
+                  <Button x:Name="GoronTunicColor" Grid.Row="2" Grid.Column="1" MinWidth="110" Height="32" Tag="Goron" Click="PickTunicColor_Click"/>
+                  <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Horizontal" Spacing="12">
+                    <RadioButton x:Name="GoronTunicLocked" GroupName="GoronTunicMode" Content="Locked"/>
+                    <RadioButton x:Name="GoronTunicRandomLaunch" GroupName="GoronTunicMode" Content="Randomize on launch"/>
+                    <RadioButton x:Name="GoronTunicSeedRandom" GroupName="GoronTunicMode" Content="Seed randomize"/>
+                  </StackPanel>
+                  <TextBlock Grid.Row="3" Text="Zora Tunic" VerticalAlignment="Center"/>
+                  <Button x:Name="ZoraTunicColor" Grid.Row="3" Grid.Column="1" MinWidth="110" Height="32" Tag="Zora" Click="PickTunicColor_Click"/>
+                  <StackPanel Grid.Row="3" Grid.Column="2" Orientation="Horizontal" Spacing="12">
+                    <RadioButton x:Name="ZoraTunicLocked" GroupName="ZoraTunicMode" Content="Locked"/>
+                    <RadioButton x:Name="ZoraTunicRandomLaunch" GroupName="ZoraTunicMode" Content="Randomize on launch"/>
+                    <RadioButton x:Name="ZoraTunicSeedRandom" GroupName="ZoraTunicMode" Content="Seed randomize"/>
+                  </StackPanel>
+                </Grid>
+                <TextBlock Classes="subtitle" Text="Sword colors"/>
+                <TextBlock Text="Set a blade and swing trail color for each sword." TextWrapping="Wrap"/>
+                <Grid ColumnDefinitions="110,100,125,100,125" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="7">
+                  <TextBlock Grid.Row="0" Grid.Column="1" Text="Blade" FontWeight="SemiBold"/>
+                  <TextBlock Grid.Row="0" Grid.Column="2" Text="Blade mode" FontWeight="SemiBold"/>
+                  <TextBlock Grid.Row="0" Grid.Column="3" Text="Trail" FontWeight="SemiBold"/>
+                  <TextBlock Grid.Row="0" Grid.Column="4" Text="Trail mode" FontWeight="SemiBold"/>
+                  <TextBlock Grid.Row="1" Text="Kokiri Sword" VerticalAlignment="Center"/>
+                  <Button x:Name="KokiriSwordBladeColor" Grid.Row="1" Grid.Column="1" Height="32" Tag="KokiriSwordBlade" Click="PickSwordColor_Click"/>
+                  <ComboBox x:Name="KokiriSwordBladeMode" Grid.Row="1" Grid.Column="2" SelectedIndex="0"><ComboBoxItem Content="Locked" Tag="locked"/><ComboBoxItem Content="Random on launch" Tag="random_launch"/><ComboBoxItem Content="Seed random" Tag="seed"/></ComboBox>
+                  <Button x:Name="KokiriSwordTrailColor" Grid.Row="1" Grid.Column="3" Height="32" Tag="KokiriSwordTrail" Click="PickSwordColor_Click"/>
+                  <ComboBox x:Name="KokiriSwordTrailMode" Grid.Row="1" Grid.Column="4" SelectedIndex="0"><ComboBoxItem Content="Locked" Tag="locked"/><ComboBoxItem Content="Random on launch" Tag="random_launch"/><ComboBoxItem Content="Seed random" Tag="seed"/></ComboBox>
+                  <TextBlock Grid.Row="2" Text="Master Sword" VerticalAlignment="Center"/>
+                  <Button x:Name="MasterSwordBladeColor" Grid.Row="2" Grid.Column="1" Height="32" Tag="MasterSwordBlade" Click="PickSwordColor_Click"/>
+                  <ComboBox x:Name="MasterSwordBladeMode" Grid.Row="2" Grid.Column="2" SelectedIndex="0"><ComboBoxItem Content="Locked" Tag="locked"/><ComboBoxItem Content="Random on launch" Tag="random_launch"/><ComboBoxItem Content="Seed random" Tag="seed"/></ComboBox>
+                  <Button x:Name="MasterSwordTrailColor" Grid.Row="2" Grid.Column="3" Height="32" Tag="MasterSwordTrail" Click="PickSwordColor_Click"/>
+                  <ComboBox x:Name="MasterSwordTrailMode" Grid.Row="2" Grid.Column="4" SelectedIndex="0"><ComboBoxItem Content="Locked" Tag="locked"/><ComboBoxItem Content="Random on launch" Tag="random_launch"/><ComboBoxItem Content="Seed random" Tag="seed"/></ComboBox>
+                  <TextBlock Grid.Row="3" Text="Biggoron Sword" VerticalAlignment="Center"/>
+                  <Button x:Name="BiggoronSwordBladeColor" Grid.Row="3" Grid.Column="1" Height="32" Tag="BiggoronSwordBlade" Click="PickSwordColor_Click"/>
+                  <ComboBox x:Name="BiggoronSwordBladeMode" Grid.Row="3" Grid.Column="2" SelectedIndex="0"><ComboBoxItem Content="Locked" Tag="locked"/><ComboBoxItem Content="Random on launch" Tag="random_launch"/><ComboBoxItem Content="Seed random" Tag="seed"/></ComboBox>
+                  <Button x:Name="BiggoronSwordTrailColor" Grid.Row="3" Grid.Column="3" Height="32" Tag="BiggoronSwordTrail" Click="PickSwordColor_Click"/>
+                  <ComboBox x:Name="BiggoronSwordTrailMode" Grid.Row="3" Grid.Column="4" SelectedIndex="0"><ComboBoxItem Content="Locked" Tag="locked"/><ComboBoxItem Content="Random on launch" Tag="random_launch"/><ComboBoxItem Content="Seed random" Tag="seed"/></ComboBox>
+                </Grid>
+                <TextBlock Classes="subtitle" Text="Megaton Hammer color"/>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <CheckBox x:Name="HammerColorEnabled" Content="Custom hammer" VerticalAlignment="Center"/>
+                  <Button x:Name="HammerColor" Height="32" MinWidth="100" Tag="Hammer" Click="PickSwordColor_Click"/>
+                  <ComboBox x:Name="HammerMode" SelectedIndex="0"><ComboBoxItem Content="Locked" Tag="locked"/><ComboBoxItem Content="Random on launch" Tag="random_launch"/><ComboBoxItem Content="Seed random" Tag="seed"/></ComboBox>
+                </StackPanel>
+                <TextBlock Classes="subtitle" FontSize="10" Text="Tunic, sword, and hammer colors apply on launch; sword trails are experimental." TextWrapping="Wrap"/>
+              </StackPanel></Border>
+              <Button x:Name="SaveTunicCosmeticsButton" Classes="raised primary" Content="Save cosmetic preferences" HorizontalAlignment="Right" Click="SaveTunicCosmetics_Click"/>
+            </StackPanel></TabItem>
+          </TabControl>
+        </StackPanel>
+      </ScrollViewer>
+
+      <ScrollViewer x:Name="CreatePage" IsVisible="False" HorizontalContentAlignment="Stretch">
+        <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="14" HorizontalAlignment="Stretch">
+          <Button Classes="raised" Content="← Choose Another Adventure" HorizontalAlignment="Left" Click="Adventure_Click"/>
+          <TextBlock Grid.Row="1" Classes="kicker" Text="BEGIN A NEW ADVENTURE"/>
+          <Border Grid.Row="2" Classes="panel" HorizontalAlignment="Stretch" Padding="14">
+            <StackPanel Spacing="10">
+              <Grid ColumnDefinitions="90,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="7">
+                <TextBlock Text="Save profile" VerticalAlignment="Center"/>
+                <TextBox x:Name="CreateNameBox" Grid.Column="1" Watermark="Link" MaxLength="80"/>
+                <TextBlock Grid.Row="1" Text="Mode" VerticalAlignment="Center"/>
+                <CheckBox x:Name="CreateRandomizedCheck" Grid.Row="1" Grid.Column="1"
+                          Content="Randomized adventure (Dev only)" Checked="CreateMode_Changed" Unchecked="CreateMode_Changed"/>
+                <TextBlock Grid.Row="2" Text="Seed" VerticalAlignment="Center"/>
+                <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                  <TextBox x:Name="CreateSeedBox" Watermark="Hexadecimal or text seed" MaxLength="128" IsEnabled="False"/>
+                  <Button x:Name="CreateSeedButton" Grid.Column="1" Classes="raised" Content="New seed value"
+                          Click="CreateSeed_Click" IsEnabled="False"/>
+                </Grid>
+              </Grid>
+              <TextBlock x:Name="CreateNotice" Classes="subtitle"
+                         Text="A new isolated save directory will be created. Other profiles are untouched."
+                         TextWrapping="Wrap"/>
+              <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                <Button Classes="raised" Content="Cancel" Click="Adventure_Click"/>
+                <Button x:Name="CreateActionButton" Classes="raised primary" Content="Create profile" Click="Create_Click"/>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </Grid>
+      </ScrollViewer>
+
+      <Grid x:Name="DetailsPage" IsVisible="False" Margin="8,5" RowDefinitions="Auto,*,Auto" RowSpacing="6">
+          <!-- Qt detail navigation is ABOVE and OUTSIDE the save frame. -->
+          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+            <TextBlock x:Name="DetailsTitle" Text="Adventure" FontSize="19" FontWeight="Bold" VerticalAlignment="Center"/>
+            <Button x:Name="DeleteSelectedSaveButton" Grid.Column="1" Classes="raised" Content="Delete Adventure…" Click="DeleteSelectedSave_Click" Padding="12,7" ToolTip.Tip="Permanently delete this managed adventure and its save files. No backup is created."/>
+            <Button x:Name="HAL_DetailsBackButton" Grid.Column="2" Classes="raised" Content="Choose Another Adventure" Click="Adventure_Click" Padding="12,7"/>
+          </Grid>
+          <Border Grid.Row="1" Classes="saveInfoFrame" Padding="10" BoxShadow="0 5 22 0 #9b000000">
+            <Grid RowDefinitions="Auto,*" RowSpacing="6">
+              <Grid x:Name="HAL_DetailsHeader" ColumnDefinitions="168,*" ColumnSpacing="12" MinHeight="108">
+                <Border Classes="previewShell" Width="168" Height="100" Padding="8"
+                        HorizontalAlignment="Left" VerticalAlignment="Top">
+                  <Grid Width="150" Height="84">
+                    <Image x:Name="SavePreview" Stretch="Uniform"/>
+                    <TextBlock x:Name="NoPreviewText" Text="No save image" Classes="microLabel"
+                               VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                  </Grid>
+                </Border>
+                <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                  <StackPanel Spacing="3">
+                    <TextBlock x:Name="DetailsLocation" Text="Location: Unknown" FontSize="16" FontWeight="Bold" TextWrapping="Wrap"/>
+                    <TextBlock x:Name="DetailsAge" Text="Age: Unknown" Classes="subtitle" FontSize="12"/>
+                    <StackPanel x:Name="HAL_EditAgePanel" Orientation="Horizontal" Spacing="8" IsVisible="False">
+                      <TextBlock Text="Age:" Classes="subtitle" VerticalAlignment="Center"/>
+                      <ComboBox x:Name="HAL_EditAge" MinWidth="120" IsEnabled="False"><ComboBoxItem Content="Child"/><ComboBoxItem Content="Adult"/></ComboBox>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                      <TextBlock x:Name="DetailsTime" Text="Save Date: Not yet saved" Classes="subtitle" FontSize="12"/>
+                      <TextBlock x:Name="DetailsSeed" Classes="subtitle" FontSize="11"/>
+                    </StackPanel>
+                    <TextBlock x:Name="DetailsPath" IsVisible="False" FontSize="10" />
+                    <TextBlock x:Name="SaveWarning" TextWrapping="Wrap" Foreground="#f2ad8e" FontSize="11"/>
+                    <ContentControl x:Name="HAL_EditSelector" IsVisible="False" HorizontalAlignment="Left"/>
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="6" HorizontalAlignment="Right" VerticalAlignment="Top">
+                    <Border x:Name="DetailsBadge" Classes="saveBadge" HorizontalAlignment="Right" Padding="10,5">
+                      <TextBlock x:Name="DetailsType" FontSize="11" Text="Vanilla Save" Foreground="#d1cbd5"/>
+                    </Border>
+                    <ComboBox x:Name="HAL_DetailsSlotPicker" MinWidth="180" PlaceholderText="No save slots"
+                              DisplayMemberBinding="{Binding HAL_SlotLabel}" SelectionChanged="HAL_DetailsSlot_Changed"/>
+                  </StackPanel>
+                </Grid>
+              </Grid>
+              <!-- Native Avalonia version of the 1160×356 Qt inventory canvas. -->
+              <local:HAL_AdventureSummaryView Grid.Row="1" x:Name="SummaryView" ExpandToFill="True"
+                                               HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+
+            </Grid>
+          </Border>
+          <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button x:Name="EditSaveButton" Classes="raised" Content="Edit Save" Click="EditSave_Click" Padding="12,7"/>
+            <Button x:Name="HAL_CancelEditsButton" Classes="raised" Content="Cancel" Click="HAL_CancelEdits_Click" IsVisible="False" Padding="12,7"/>
+            <Button x:Name="HAL_SaveEditsButton" Classes="raised primary" Content="Save" Click="HAL_SaveEdits_Click" IsVisible="False" Padding="12,7"/>
+          </StackPanel>
+          <TextBlock Grid.Column="1" x:Name="HAL_EditStatus" IsVisible="False" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Classes="subtitle"
+                     ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" VerticalAlignment="Center"/>
+          <Button Grid.Column="2" x:Name="LaunchButton" Classes="raised primary" Content="Launch Game" Click="Launch_Click" IsEnabled="False" HorizontalAlignment="Right" Padding="16,9"/>
+          </Grid>
+      </Grid>
+
+      <Grid x:Name="ManagePage" IsVisible="False">
+        <Grid Margin="12,10" ColumnDefinitions="180,*" ColumnSpacing="14">
+          <Grid x:Name="HAL_ManageSidebar" RowDefinitions="Auto,*,Auto,Auto" RowSpacing="8">
+            <TextBlock Classes="kicker" Text="ADVENTURES"/>
+            <ListBox x:Name="ProfileList" Grid.Row="1" SelectionChanged="ManagedProfile_Changed"
+                     Background="{DynamicResource InsetBrush}" VerticalAlignment="Stretch"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto">
+              <ListBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding DisplayText}" Margin="4" TextWrapping="Wrap"/></DataTemplate></ListBox.ItemTemplate>
+            </ListBox>
+            <Button x:Name="HAL_ManageNewButton" Grid.Row="2" Classes="raised primary" Content="+ New adventure" Click="NewFromManage_Click" HorizontalAlignment="Stretch" Padding="10,7" FontSize="12"/>
+            <Button x:Name="HAL_ManageBackButton" Grid.Row="3" Classes="raised" Content="← Adventure Select" Click="Adventure_Click" HorizontalAlignment="Stretch" Padding="10,7" FontSize="12"/>
+          </Grid>
+          <Grid Grid.Column="1" RowDefinitions="Auto,*,Auto" RowSpacing="7">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+              <StackPanel Spacing="2">
+                <TextBlock Text="HOOKSHOT  /  SAVE PROFILES" Classes="kicker"/>
+                <TextBlock x:Name="ManagedProfileTitle" Text="Adventure Select" FontSize="20" FontWeight="Bold"/>
+                <TextBlock x:Name="ManagedProfileMode" Classes="subtitle" Text="Choose a profile to inspect its save and settings."/>
+              </StackPanel>
+              <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Top">
+                <Button Classes="raised" Content="Choose another adventure" Click="Adventure_Click"/>
+                <ComboBox x:Name="HAL_ManagedSlotPicker" MinWidth="200" HorizontalAlignment="Right"
+                          SelectionChanged="HAL_ManagedSlot_Changed" PlaceholderText="No save slots"
+                          AutomationProperties.Name="Save slot">
+                  <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding HAL_SlotLabel}"/></DataTemplate></ComboBox.ItemTemplate>
+                </ComboBox>
+              </StackPanel>
+            </Grid>
+            <TabControl x:Name="ProfileManagerTabs" Grid.Row="1">
+              <TabItem Header="Overview"><Border Classes="panel" Padding="8"><Grid RowDefinitions="Auto,*" RowSpacing="6">
+                <Grid ColumnDefinitions="148,*" ColumnSpacing="10">
+                  <Border Classes="previewShell" Width="148" Height="92" Padding="4"><Grid>
+                    <Image x:Name="ManagedSavePreview" Stretch="Uniform"/>
+                    <TextBlock x:Name="ManagedNoPreview" Text="No save image" Classes="microLabel" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                  </Grid></Border>
+                  <StackPanel Grid.Column="1" Spacing="5">
+                    <TextBlock x:Name="ManagedLocation" FontSize="15" FontWeight="Bold" Text="Location: Unknown"/>
+                    <TextBlock x:Name="ManagedAge" Classes="subtitle" Text="Age: Unknown"/>
+                    <TextBlock x:Name="ManagedSaveDate" Classes="subtitle" Text="Save Date: Unknown"/>
+                    <TextBlock x:Name="ManagedSeed" Classes="subtitle" TextWrapping="Wrap"/>
+                  </StackPanel>
+                </Grid>
+                <local:HAL_AdventureSummaryView Grid.Row="1" x:Name="ManagedSummaryView" Compact="True" Height="58" HorizontalAlignment="Stretch" VerticalAlignment="Top"/>
+              </Grid></Border></TabItem>
+              <TabItem Header="Save files"><ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="10" Spacing="7">
+                <TextBlock Classes="kicker" Text="SAVE DATA"/>
+                <TextBlock x:Name="ManagedDiskSummary" Classes="subtitle" TextWrapping="Wrap"/>
+                <TextBlock x:Name="ManagedSlotInfo" Classes="subtitle" TextWrapping="Wrap"/>
+                <TextBlock Classes="kicker" Text="INVENTORY / EQUIPMENT · LIVE SAVE DATA" Margin="0,5,0,0"/>
+                <TextBlock x:Name="ManagedInventoryInfo" Classes="subtitle" TextWrapping="Wrap"/>
+                <TextBlock x:Name="ManagedSavePath" Classes="subtitle" TextWrapping="Wrap"/>
+                <Button Classes="raised" Content="Open save tools" Click="Tools_Click" HorizontalAlignment="Left"/>
+              </StackPanel></ScrollViewer></TabItem>
+              <TabItem Header="Spiritual Stones"><Border Classes="panel" Padding="12" HorizontalAlignment="Stretch" VerticalAlignment="Top">
+                <StackPanel Spacing="8">
+                  <TextBlock Classes="kicker" Text="QUEST ITEMS · LIVE SAVE DATA"/>
+                  <TextBlock x:Name="ManagedStoneSummary" Classes="subtitle" TextWrapping="Wrap"/>
+                </StackPanel>
+              </Border></TabItem>
+              <TabItem Header="Randomizer"><Border Classes="panel" Padding="10" HorizontalAlignment="Stretch" VerticalAlignment="Top">
+                <StackPanel Spacing="8">
+                  <TextBlock Classes="kicker" Text="SEED SETTINGS"/>
+                  <TextBlock x:Name="ManagedRandomizerSummary" Classes="subtitle" TextWrapping="Wrap"/>
+                </StackPanel>
+              </Border></TabItem>
+              <TabItem Header="Manage"><StackPanel Margin="10" Spacing="10">
+                <TextBlock Classes="kicker" Text="SHOW ON LAUNCH SCREEN"/>
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6">
+                  <Button x:Name="Pin0Button" Classes="raised" Content="Pin to 1" Click="Pin0_Click" IsEnabled="False" HorizontalAlignment="Stretch"/>
+                  <Button x:Name="Pin1Button" Grid.Column="1" Classes="raised" Content="Pin to 2" Click="Pin1_Click" IsEnabled="False" HorizontalAlignment="Stretch"/>
+                  <Button x:Name="Pin2Button" Grid.Column="2" Classes="raised" Content="Pin to 3" Click="Pin2_Click" IsEnabled="False" HorizontalAlignment="Stretch"/>
+                </Grid>
+                <TextBlock Classes="subtitle" Text="Three launcher shortcuts only; other profiles remain accessible from this manager." TextWrapping="Wrap"/>
+                <TextBlock Classes="kicker" Text="PROFILE ACTIONS"/>
+                <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="6" RowSpacing="6">
+                  <Button x:Name="HAL_RenameButton" Classes="raised" Content="Rename" Click="Rename_Click" HorizontalAlignment="Stretch"/>
+                  <Button Grid.Column="1" Classes="raised" Content="Duplicate" Click="DuplicateSelected_Click" HorizontalAlignment="Stretch"/>
+                  <Button Grid.Column="2" Classes="raised" Content="Import saves…" Click="ManagedImport_Click" HorizontalAlignment="Stretch"/>
+                  <Button Grid.Row="1" Classes="raised" Content="Back up to ZIP…" Click="BackupSelected_Click" HorizontalAlignment="Stretch"/>
+                  <Button Grid.Row="1" Grid.Column="1" Classes="raised" Content="Recover profiles" Click="RecoverUnlisted_Click" HorizontalAlignment="Stretch"/>
+                  <Button x:Name="DeleteManagedButton" Grid.Row="1" Grid.Column="2" Classes="raised" Content="Delete Profile…" Click="DeleteManaged_Click" IsEnabled="False" HorizontalAlignment="Stretch"/>
+                </Grid>
+                <TextBlock Classes="subtitle" Text="External/original save folders are read-only. Deletion permanently removes the isolated profile folder and creates no backup." TextWrapping="Wrap"/>
+              </StackPanel></TabItem>
+            </TabControl>
+            <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="7">
+              <Button x:Name="ManagedDeleteButton" Classes="raised" Content="Delete Save…" Click="DeleteManaged_Click" IsVisible="False" Padding="12,7" ToolTip.Tip="Permanently remove this isolated adventure and its save files. No backup is created."/>
+              <Button x:Name="ManagedLaunchButton" Grid.Column="3" Classes="raised primary" Content="Launch Game" Click="ManagedLaunch_Click" IsEnabled="False" Padding="16,8"/>
+            </Grid>
+          </Grid>
+        </Grid>
+      </Grid>
+
+      <ScrollViewer x:Name="ToolsPage" IsVisible="False">
+        <StackPanel Spacing="14">
+          <Button x:Name="ToolsBackButton" Classes="raised" Content="← Settings" Click="Settings_Click" HorizontalAlignment="Left" Padding="12,7"/>
+          <TextBlock Classes="heading" Text="Tools &amp; Diagnostics"/>
+          <TabControl x:Name="ToolsSections" MinHeight="420">
+            <TabItem Header="Artwork"><StackPanel Spacing="9" Margin="10">
+              <TextBlock Classes="kicker" Text="ICON CACHE"/>
+              <TextBlock x:Name="ManifestStats" Text="Loading manifest..." />
+              <TextBlock x:Name="IconCacheStats" Classes="subtitle" TextWrapping="Wrap"/>
+              <TextBlock Classes="subtitle" Text="Builds icons locally from your installed game. Unavailable images use dimmed placeholders." TextWrapping="Wrap"/>
+              <TextBox x:Name="ToolsIconCacheBox" Watermark="~/.cache/hookshot/save-assets"/>
+              <Button x:Name="ToolsReloadIcons" Classes="raised" Content="Reload local save icons" Click="ReloadIcons_Click" HorizontalAlignment="Left"/>
+              <Button Classes="raised" Content="Rebuild icon database" Click="BuildIcons_Click" HorizontalAlignment="Left"/>
+            </StackPanel></TabItem>
+            <TabItem Header="Saves"><StackPanel Spacing="8" Margin="10">
+              <TextBlock Classes="kicker" Text="SAVE TOOLS"/>
+              <TextBlock Classes="subtitle" Text="Back up creates one compressed ZIP and keeps the active profile. Recovery finds unlisted profiles; legacy restore imports an older folder backup." TextWrapping="Wrap"/>
+              <Button x:Name="BackupSelectedButton" Classes="raised" Content="Back up selected adventure…" Click="BackupSelected_Click"/>
+              <Button x:Name="RestoreCompressedBackupButton" Classes="raised" Content="Restore compressed backup…" Click="RestoreBackup_Click"/>
+              <Button Classes="raised" Content="Restore legacy folder…" Click="RestoreLegacy_Click"/>
+              <Button x:Name="RecoverUnlistedButton" Classes="raised" Content="Recover unlisted profiles…" Click="RecoverUnlisted_Click"/>
+            </StackPanel></TabItem>
+          </TabControl>
+          <Border Classes="panel"><StackPanel Spacing="9">
+            <TextBlock FontWeight="SemiBold" Text="Shader &amp; pipeline tools" />
+            <TextBlock Classes="subtitle" Text="Hookshot-specific Vulkan settings are not applied blindly. Tools will be enabled after Hookshot engine capability checks."/>
+          </StackPanel></Border>
+          <Border Classes="panel"><StackPanel Spacing="9">
+            <TextBlock FontWeight="SemiBold" Text="Randomizer" />
+            <TextBlock Classes="subtitle" Text="New randomized adventures generate a fixed seed using your Randomizer settings."/>
+          </StackPanel></Border>
+        </StackPanel>
+      </ScrollViewer>
+
+      <ScrollViewer x:Name="SettingsPage" IsVisible="False">
+        <StackPanel Spacing="8">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Classes="heading" Text="Settings" VerticalAlignment="Center"/>
+            <Button Grid.Column="1" x:Name="SettingsBackButton" Classes="raised" Content="← Back to Adventures" Click="Adventure_Click" Padding="12,6"/>
+          </Grid>
+          <TabControl x:Name="SettingsSections" MinHeight="320">
+            <TabItem Header="Appearance"><StackPanel Margin="12" Spacing="12">
+              <TextBlock FontWeight="SemiBold" Text="Visual theme"/>
+              <ComboBox x:Name="ThemePicker" Width="270" HorizontalAlignment="Left" SelectionChanged="ThemePicker_Changed">
+                <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Label}"/></DataTemplate></ComboBox.ItemTemplate>
+              </ComboBox>
+              <TextBlock Classes="subtitle" Text="Changes apply to the Avalonia launcher. All eight Qt themes are retained." TextWrapping="Wrap"/>
+            </StackPanel></TabItem>
+            <TabItem Header="Debug"><StackPanel Margin="12" Spacing="10">
+              <TextBlock Classes="kicker" Text="VIDEO DIAGNOSTICS"/>
+              <CheckBox x:Name="VideoDebugCheck" Content="Video Debug (Vulkan)" Checked="VideoDebug_Changed" Unchecked="VideoDebug_Changed"/>
+              <TextBlock Classes="subtitle" Text="Shows Vulkan debug and trace messages in the game console on the next launch. You can also pass --Video-Debug directly to Hookshot." TextWrapping="Wrap"/>
+              <CheckBox x:Name="HosDebugCheck" Content="HOS Debug (host messages)" Checked="HosDebug_Changed" Unchecked="HosDebug_Changed"/>
+              <TextBlock Classes="subtitle" Text="Shows HOS info, debug, and trace messages in the game console on the next launch. Warnings and errors remain visible. You can also pass --HOS-Debug directly to Hookshot." TextWrapping="Wrap"/>
+              <CheckBox x:Name="A64DebugCheck" Content="A64 Debug (unimplemented imports)" Checked="A64Debug_Changed" Unchecked="A64Debug_Changed"/>
+              <TextBlock Classes="subtitle" Text="Shows the AArch64 imports that Hookshot reaches without a native implementation. Messages are reported once per import on the next game launch." TextWrapping="Wrap"/>
+              <CheckBox x:Name="DebugKeyCheck" Content="Debug Key (F9 gameplay trace)" Checked="DebugKey_Changed" Unchecked="DebugKey_Changed"/>
+              <TextBlock Classes="subtitle" Text="Press F9 to start or stop logging GameData flag changes and event state to the launcher log. Values are identified by game hash." TextWrapping="Wrap"/>
+            </StackPanel></TabItem>
+            <TabItem Header="Reinstall"><StackPanel Margin="12" Spacing="10">
+              <TextBlock Classes="kicker" Text="INSTALL / REINSTALL HOOKSHOT"/>
+              <TextBlock Classes="subtitle" Text="Open Hookshot Builder to install or update stock Hookshot and choose NVIDIA DLSS or AMD FSR 4. Development builds are under Tools → Dev Build Setup." TextWrapping="Wrap"/>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button x:Name="HAL_ReviewStockButton" Classes="raised" Content="Open Hookshot Builder" Click="ReviewInstall_Click"/>
+                <Button x:Name="HAL_ReinstallStockButton" Classes="raised primary" Content="Reinstall with Hookshot Builder" Click="BeginReinstall_Click"/>
+              </StackPanel>
+              <TextBlock x:Name="InstallReviewStatus" Classes="subtitle" TextWrapping="Wrap"/>
+            </StackPanel></TabItem>
+          <TabItem Header="Tools"><TabControl x:Name="SettingsToolsSections">
+            <TabItem x:Name="HAL_DevBuildTab" Header="Dev Build Setup"><ScrollViewer x:Name="DevBuildScroll"><StackPanel x:Name="DevBuildForm" Margin="12,6" Spacing="6">
+              <StackPanel.Styles>
+                <Style Selector="Button.raised"><Setter Property="Padding" Value="12,6"/><Setter Property="MinHeight" Value="32"/></Style>
+                <Style Selector="TextBox"><Setter Property="Padding" Value="8,5"/><Setter Property="MinHeight" Value="32"/></Style>
+              </StackPanel.Styles>
+              <TextBlock Classes="subtitle" Text="Install or update a separate development copy. Your stable Hookshot install stays protected." TextWrapping="Wrap"/>
+              <TextBlock Text="Game source (existing Hookshot, .nup, or extracted folder)"/>
+              <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                <TextBox x:Name="DevSourceBox" Watermark="Path to your local game source"/>
+                <Button x:Name="BrowseDevSourceFileButton" Grid.Column="1" Classes="raised" Content="Browse .nup…" Click="BrowseDevSourceFile_Click"/>
+                <Button x:Name="BrowseDevSourceFolderButton" Grid.Column="2" Classes="raised" Content="Browse folder…" Click="BrowseDevSourceFolder_Click"/>
+              </Grid>
+              <TextBlock Text="Development install directory"/>
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                <TextBox x:Name="DevOutputBox" Watermark="~/Games/Hookshot-Dev"/>
+                <Button x:Name="BrowseDevOutputButton" Grid.Column="1" Classes="raised" Content="Browse…" Click="BrowseDevOutput_Click"/>
+              </Grid>
+              <TextBlock x:Name="DevBuildStatus" Classes="subtitle" TextWrapping="Wrap"/>
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="20" VerticalAlignment="Center">
+                <CheckBox x:Name="HAL_ForceDevReinstallCheck" Content="Reinstall from game source" VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" HorizontalAlignment="Right">
+                  <TextBlock Text="Shader workers" VerticalAlignment="Center" ToolTip.Tip="Blank uses the automatic half-CPU setting."/>
+                  <TextBox x:Name="DevShaderWorkersBox" Width="90" Watermark="Automatic" TextChanged="DevShaderWorkers_TextChanged" ToolTip.Tip="Override shader preparation worker count (1–32). The value is saved for later builds."/>
+                  <CheckBox x:Name="DevShaderWorkersMaxCheck" Content="Max" Checked="DevShaderWorkersMax_Changed" Unchecked="DevShaderWorkersMax_Changed" ToolTip.Tip="Use the available CPU count minus two, with at least one worker (capped at 32)."/>
+                </StackPanel>
+              </Grid>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button x:Name="ReviewDevBuildButton" Classes="raised" Content="Review setup" Click="ReviewDevBuild_Click"/>
+                <Button x:Name="BuildDevButton" Classes="raised primary" Content="Install / update Hookshot-Dev" Click="BuildDev_Click"/>
+              </StackPanel>
+            </StackPanel></ScrollViewer></TabItem>
+            <TabItem Header="Artwork"><StackPanel Margin="12" Spacing="10">
+              <TextBlock Classes="kicker" Text="ICON CACHE"/>
+              <TextBlock Classes="subtitle" Text="Reads the private local save-artwork cache. Missing artwork uses vector placeholders." TextWrapping="Wrap"/>
+              <TextBlock x:Name="IconCacheStatus" Classes="subtitle" TextWrapping="Wrap" FontSize="11"/>
+              <TextBox x:Name="IconCacheBox" Watermark="~/.cache/hookshot/save-assets (or a hash folder)"/>
+              <Button Classes="raised" Content="Reload local save icons" Click="ReloadIcons_Click" HorizontalAlignment="Left" Padding="12,7"/>
+              <Button Classes="raised" Content="Rebuild icon database" Click="BuildIcons_Click" HorizontalAlignment="Left" Padding="12,7"/>
+              <TextBlock FontWeight="SemiBold" Text="Local data locations" Margin="0,14,0,0"/>
+              <TextBlock x:Name="RegistryPathText" Classes="subtitle" TextWrapping="Wrap" FontSize="11"/>
+              <TextBlock x:Name="ImportedPathText" Classes="subtitle" TextWrapping="Wrap" FontSize="11"/>
+            </StackPanel></TabItem>
+            <TabItem Header="Saves"><StackPanel Margin="12" Spacing="8">
+              <TextBlock Classes="kicker" Text="SAVE TOOLS"/>
+              <TextBlock Classes="subtitle" Text="Back up creates one compressed ZIP and keeps the active profile. Recovery finds unlisted profiles; legacy restore imports an older folder backup." TextWrapping="Wrap"/>
+              <Button Classes="raised" Content="Back up selected adventure…" Click="BackupSelected_Click"/>
+              <Button Classes="raised" Content="Restore compressed backup…" Click="RestoreBackup_Click"/>
+              <Button Classes="raised" Content="Restore legacy folder…" Click="RestoreLegacy_Click"/>
+              <Button Classes="raised" Content="Recover unlisted profiles…" Click="RecoverUnlisted_Click"/>
+            </StackPanel></TabItem>
+          </TabControl></TabItem>
+            <TabItem Header="Tweaks"><TabControl x:Name="TweaksSections">
+              <TabItem Header="Builder"><StackPanel Margin="12" Spacing="10">
+                <TextBlock Classes="kicker" Text="NATIVE BUILD PREFERENCES"/>
+                <CheckBox x:Name="RetainCompilerObjectsCheck" Content="Retain compiler objects for faster updates" IsChecked="True"/>
+                <CheckBox x:Name="PreparePipelinesCheck" Content="Prepare shaders and pipelines during the native build" IsChecked="True"/>
+                <TextBlock Classes="subtitle" Text="Language, output folder and parallel build jobs are configured by the native builder." TextWrapping="Wrap"/>
+                <Button x:Name="OpenDevBuildSetupButton" Classes="raised" Content="Open dev build setup…" Click="OpenBuildConfiguration_Click" HorizontalAlignment="Left"/>
+              </StackPanel></TabItem>
+              <TabItem Header="Game Launch"><StackPanel Margin="12" Spacing="10">
+              <TextBlock FontWeight="SemiBold" Text="Launch build"/>
+              <TextBlock Classes="subtitle" Text="Choose which installed build to launch." TextWrapping="Wrap"/>
+              <StackPanel Orientation="Horizontal" Spacing="18">
+                <RadioButton x:Name="LaunchDevRadio" GroupName="LaunchBuild" Tag="dev" Content="Hookshot-Dev" Checked="LaunchBuild_Changed"/>
+                <RadioButton x:Name="LaunchStableRadio" GroupName="LaunchBuild" Tag="stable" Content="Hookshot" Checked="LaunchBuild_Changed"/>
+              </StackPanel>
+              <TextBlock Text="Selected install folder"/>
+              <TextBox x:Name="GameDirectoryBox" Watermark="~/Games/Hookshot-Dev"/>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Classes="raised" Content="Verify folder" Click="GameDirectory_Click"/>
+              </StackPanel>
+              <TextBlock x:Name="LaunchDirectoryStatus" Classes="subtitle" TextWrapping="Wrap"/>
+              </StackPanel></TabItem>
+              <TabItem Header="Shader / Pipeline Tools"><StackPanel Margin="12" Spacing="10">
+                <TextBlock FontWeight="SemiBold" Text="Shader and pipeline tools"/>
+                <TextBlock Classes="subtitle" Text="Pipeline preparation is available through the native Hookshot runtime. These Avalonia controls are not implemented yet." TextWrapping="Wrap"/>
+              </StackPanel></TabItem>
+            </TabControl></TabItem>
+            <TabItem Header="Warnings &amp; Errors"><StackPanel Margin="12" Spacing="10">
+              <TextBlock FontSize="18" FontWeight="Bold" Text="Warnings &amp; Errors"/>
+              <TextBlock Classes="subtitle" Text="Each item explains what happened and how to clear it. Updates when you reopen Settings or retry checks." TextWrapping="Wrap"/>
+              <Border Classes="panel" Padding="12"><StackPanel Spacing="6">
+                <TextBlock x:Name="WarningTitle" Foreground="#F2B84B" FontWeight="Bold" Text="Checking installation…"/>
+                <TextBlock x:Name="WarningDetails" TextWrapping="Wrap"/>
+                <TextBlock x:Name="WarningResolution" Classes="subtitle" TextWrapping="Wrap"/>
+              </StackPanel></Border>
+              <Button Classes="raised" Content="Retry Checks" Click="RetryChecks_Click" HorizontalAlignment="Right"/>
+            </StackPanel></TabItem>
+          </TabControl>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+    <Border Grid.Row="3" Background="{DynamicResource CardBrush}" CornerRadius="6" Padding="10,7">
+      <TextBlock x:Name="StatusText" FontSize="12" Text="Ready" TextWrapping="Wrap"/>
+    </Border>
+  </Grid>
+</Window>
