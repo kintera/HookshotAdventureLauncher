@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "checks": [
+    { "tokens": 10, "name": "10 Gold Skulltulas", "reward": "Adult's Wallet" },
+    { "tokens": 20, "name": "20 Gold Skulltulas", "reward": "Stone of Agony" },
+    { "tokens": 30, "name": "30 Gold Skulltulas", "reward": "Giant's Wallet" },
+    { "tokens": 40, "name": "40 Gold Skulltulas", "reward": "Bombchus" },
+    { "tokens": 50, "name": "50 Gold Skulltulas", "reward": "Piece of Heart" },
+    { "tokens": 100, "name": "100 Gold Skulltulas", "reward": "Gold Rupee" }
+  ]
+}

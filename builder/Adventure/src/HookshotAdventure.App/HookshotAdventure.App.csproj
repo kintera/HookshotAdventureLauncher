@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Version>0.9.1-alpha</Version>
+    <InformationalVersion>0.9.01-alpha</InformationalVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.23" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.23" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.23" />
+    <!-- Backported fix for GHSA-xrw6-gwf8-vvr9; keep this minimum explicit. -->
+    <PackageReference Include="Tmds.DBus.Protocol" Version="0.21.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <AvaloniaResource Include="Assets/HAL_hookshot.png" />
+    <AvaloniaResource Include="Assets/HAL_hookshot.ico" />
+    <ProjectReference Include="../HookshotAdventure.Core/HookshotAdventure.Core.csproj" />
+    <Content Include="../../resources/icon_manifest.json" Link="resources/icon_manifest.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../resources/HALr_skulltula_rewards.json" Link="resources/HALr_skulltula_rewards.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

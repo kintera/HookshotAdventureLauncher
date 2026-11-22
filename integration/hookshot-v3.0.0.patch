@@ -1,0 +1,2228 @@
+diff --git a/builder/linux/AppRun b/builder/linux/AppRun
+index 1df8c3b7..51c817f7 100755
+--- a/builder/linux/AppRun
++++ b/builder/linux/AppRun
+@@ -2,13 +2,15 @@
+ # The Hookshot AppImage: the builder window (builder/linux/hookshot_builder.py) with everything it builds the game with -
+ # Python and the tools, clang and lld, a glibc 2.35 sysroot, FFmpeg, SDL2, and the Vulkan back end's sources (every build
+ # compiles the back end on the player's PC, for its CPU and with the renderer's play profile; no prebuilt one).
+-#   Hookshot.AppImage                  the builder window (Play is in the window, once a game is built)
++#   Hookshot.AppImage                  Adventure if included, otherwise the builder window
+ #   Hookshot.AppImage --play           start the game the builder saved, without opening the window
+ #   Hookshot.AppImage --play <folder>  start the game in that folder
+ #   Hookshot.AppImage <folder>         the same
+ #   Hookshot.AppImage --cli <args>     nx2/make_game.py itself, e.g. --cli --nup game.nup --out ~/Games/Hookshot
+ #   Hookshot.AppImage --launch <dir>  the game folder's launcher: Play, and Update when a newer release is out
+ #   Hookshot.AppImage --update <dir>  download the new release (only the parts that changed) and build that folder again
++#   Hookshot.AppImage --builtin       open the original Builder when Adventure is included
++#   Hookshot.AppImage --adventure     open Adventure explicitly when included
+ HERE="$(dirname "$(readlink -f "$0")")"
+ LIB="$HERE/usr/lib/hookshot"
+ export HOOKSHOT_TOOLS="$HERE/usr/share/hookshot"
+@@ -35,4 +37,19 @@ fi
+ if [ -n "${1:-}" ] && [ -d "$1" ]; then
+     exec "$HOOKSHOT_TOOLS/builder/linux/hookshot-launch" "$1"
+ fi
++if [ "${1:-}" = "--builtin" ]; then
++    shift
++    exec "$PY" -I "$HOOKSHOT_TOOLS/builder/linux/hookshot_builder.py" "$@"
++fi
++if [ "$#" -eq 0 ] || [ "${1:-}" = "--adventure" ]; then
++    ADVENTURE="$HOOKSHOT_TOOLS/builder/Adventure/app/HookshotAdventure.App"
++    if [ -x "$ADVENTURE" ]; then
++        [ "${1:-}" = "--adventure" ] && shift
++        exec "$ADVENTURE" "$@"
++    fi
++    if [ "${1:-}" = "--adventure" ]; then
++        echo "This Hookshot image does not include Adventure." >&2
++        exit 1
++    fi
++fi
+ exec "$PY" -I "$HOOKSHOT_TOOLS/builder/linux/hookshot_builder.py" "$@"
+diff --git a/builder/linux/linux_update.py b/builder/linux/linux_update.py
+index 84bb51f6..12a5f591 100644
+--- a/builder/linux/linux_update.py
++++ b/builder/linux/linux_update.py
+@@ -23,9 +23,23 @@ import zipfile
+ from part_links import SYSROOT_PART, is_absolute_link, relative_sysroot_link
+ 
+ LIST_NAME = "hookshot-linux.txt"
+-LATEST_LIST = "https://git.notrexed.dev/Hookshot/Hookshot/releases/latest/download/" + LIST_NAME
+-LATEST_API = "https://git.notrexed.dev/api/v1/repos/Hookshot/Hookshot/releases/latest"
+-RELEASES_API = "https://git.notrexed.dev/api/v1/repos/Hookshot/Hookshot/releases?limit=20"
++def release_repository():
++    """The packaged fork's release source, or upstream for a stock checkout/image."""
++    path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "UPDATE_REPOSITORY")
++    try:
++        with open(path, encoding="utf-8") as f:
++            repository = f.read().strip()
++    except FileNotFoundError:
++        return "Hookshot/Hookshot"
++    if not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9._-]*/[A-Za-z0-9_][A-Za-z0-9._-]*", repository):
++        raise ValueError("Invalid packaged update repository")
++    return repository
++
++
++REPOSITORY = release_repository()
++LATEST_LIST = "https://git.notrexed.dev/" + REPOSITORY + "/releases/latest/download/" + LIST_NAME
++LATEST_API = "https://git.notrexed.dev/api/v1/repos/" + REPOSITORY + "/releases/latest"
++RELEASES_API = "https://git.notrexed.dev/api/v1/repos/" + REPOSITORY + "/releases?limit=20"
+ # (the update tracks: the builder's Track choice, by default the track of the build installed. The setup,
+ # builder/setup/setup.c, and the Windows builder, Updater.cs, use the same rules)
+ TRACKS = ("release", "rc", "nightly")
+@@ -130,7 +144,7 @@ def release_of(tag):
+ def list_url(tag=None):
+     if not tag:
+         return LATEST_LIST
+-    return "https://git.notrexed.dev/Hookshot/Hookshot/releases/download/%s/%s" % (release_of(tag), LIST_NAME)
++    return "https://git.notrexed.dev/%s/releases/download/%s/%s" % (REPOSITORY, release_of(tag), LIST_NAME)
+ 
+ 
+ def newest_release(tags):
+@@ -362,7 +376,7 @@ def fetch_bytes(url, timeout=60, stop=None):
+ 
+ # (hookshot, 2026-11-15) The Version menu: every release on git.notrexed.dev, page by page (Forgejo gives 50 a page at most), read
+ # when the menu is first opened. As the Windows builder's ReleaseList.cs. tests/test_builder_version_menu.py
+-RELEASES_PAGE = "https://git.notrexed.dev/api/v1/repos/Hookshot/Hookshot/releases?limit=50&page=%d"
++RELEASES_PAGE = "https://git.notrexed.dev/api/v1/repos/" + REPOSITORY + "/releases?limit=50&page=%d"
+ PAGE_SIZE, MOST_PAGES = 50, 40
+ 
+ 
+diff --git a/gpu/vk/switches.def b/gpu/vk/switches.def
+index 7c40a39b..1c1e67e8 100644
+--- a/gpu/vk/switches.def
++++ b/gpu/vk/switches.def
+@@ -45,6 +45,7 @@ SW(HOS_CRASH_WATCH, kill, bool, "on: a helper watches the run and shows a window
+ SW(HOS_CV_SIGNAL_ALWAYS, kill, bool, "off: a signal with no waiter returns at once", "SignalConditionVariable always takes its lock and wakes, as before.")
+ SW(HOS_CYCLE_ITEMS, player, enum, "the menu's Cycle items row", "0 off, 1 last used, 2 basic, 3 and bombs, 4 and the tools: over the menu's row for this run.")
+ SW(HOS_DAV1D_THREADS, hw, int, "dav1d's own (one per logical core); 2 on a PC with 4 or fewer", "Sets dav1d's decoder thread count.")
++SW(HOS_DEBUG_KEY, diag, bool, "off", "=1 enables F9 to start and stop a local gameplay state trace.")
+ SW(HOS_DISCARD_HOLDS_CORE, kill, bool, "off: a thread gives its virtual core up while freed pages are discarded", "=1 keeps the core through the discard, as before.")
+ SW(HOS_DISCORD, kill, bool, "on: the Discord presence thread starts", "=0 starts no Discord rich presence thread at all.")
+ SW(HOS_DISCORD_APP_ID, player, string, "the options file's discord_app_id=, else the built-in id", "Sets the Discord application id used for rich presence, over the options file's.")
+@@ -88,7 +89,7 @@ SW(HOS_HEAP_SPLIT_COLD, attempt, int, "unset: off", "With HOS_HEAP_SPLIT, above
+ SW(HOS_HLE_STATS, diag, bool, "off", "Counts each HLE function's and host call's calls and logs them about every 5 s.")
+ SW(HOS_HOSTCALL_SLOW, kill, bool, "host calls without user data are called directly as plain functions", "=1 sends every host call through the slower a64_call_miss path, as before the direct call.")
+ SW(HOS_HOSTCALL_STATS, diag, bool, "off", "Counts host calls and keeps the last 256; printed at exit (or at HOS_STATS_AFTER).")
+-SW(HOS_HOST_SPLIT, diag, bool, "off", "Names the renderer's mapped allocations by kind, for the host's split of its memory (host/hos_hostsplit.c).")
++SW(HOS_HOST_SPLIT, diag, int, "off", "Starts the host memory split after that many seconds; an optional second number sets the repeat interval.")
+ SW(HOS_HUD_FULL_RATIO, tune, float, "1.5 (3:2)", "Sets the aspect ratio below which the 16:9 HUD is drawn smaller.")
+ SW(HOS_HUD_MAX_RATIO, tune, float, "2.4 (12:5)", "Sets the aspect ratio past which the HUD's side moves stop (0: the screen's edges at any width).")
+ SW(HOS_INPUT_BACKGROUND, player, bool, "the menu's Controller in background row (off)", "Controllers and motion count while another window has the focus (1), or never (0), over the menu.")
+@@ -205,6 +206,13 @@ SW(HOS_PROFILE_DIR, diag, string, "unset: the frame trace goes to logs/hookshot_
+ SW(HOS_PROFILE_EVERY, diag, int, "off (HOS_PROFILE=1 sets it to 5)", "Logs the process's busiest threads every <seconds>; also what lets HOS_SAMPLE sample a thread.")
+ SW(HOS_PROFILE_GATE, diag, string, "off", "<thread>:<lr hex>: the profiler samples only while that thread waits on a light event from that caller.")
+ SW(HOS_QUEUE_TRACE, diag, bool, "off", "Logs the first 400 message queue puts (thread, queue, value).")
++SW(HOS_RANDO_CHILD_STEALTH, diag, bool, "0", "Development child-stealth skip grants Zelda's Letter and Zelda's Lullaby once per save.")
++SW(HOS_RANDO_CHILD_STEALTH_SONG, diag, string, "Item_Melody_ZeldaLullaby", "Supported song granted by the development child-stealth skip.")
++SW(HOS_RANDO_STARTING_CONSUMABLES, diag, string, "off: no starting consumables", "Development randomizer one-time sticks, nuts, seeds and bombs counts.")
++SW(HOS_RANDO_STARTING_DUNGEON_FLAGS, diag, string, "off: no starting dungeon grants", "Development randomizer map and compass flags to grant to the loaded save.")
++SW(HOS_RANDO_STARTING_EQUIPMENT, diag, string, "off: no starting equipment", "Development randomizer starting equipment bit mask.")
++SW(HOS_RANDO_STARTING_SONGS, diag, string, "off: no starting songs", "Development randomizer starting song flag bit mask.")
++SW(HOS_RANDO_STONE_REWARD_FALLBACK, diag, bool, "0", "Recover the Kokiri Emerald when the completed Deku Tree reward was missed.")
+ SW(HOS_REALTIME_STEP, player, bool, "the menu's real-time step row", "Overrides the menu's real-time game step row for a run; 0 keeps the shipping whole steps.")
+ SW(HOS_REALTIME_WINDOW, tune, int, "5", "How many frames (1-5) are averaged for the real-time game step.")
+ GONE(HOS_RECORD_STUTTERS, "2026-11-11", "use HOS_PROFILE=1, the profiling mode")
+diff --git a/gpu/vk/vk_wheel.cpp b/gpu/vk/vk_wheel.cpp
+index 08ba4522..2e2a28e5 100644
+--- a/gpu/vk/vk_wheel.cpp
++++ b/gpu/vk/vk_wheel.cpp
+@@ -26,6 +26,13 @@
+ #include "oot_wheel_state.h"
+ #include "video_core/textures/astc.h"
+ 
++#ifndef _WIN32
++#define STBTT_STATIC
++#define STB_TRUETYPE_IMPLEMENTATION
++#include "../../third_party/imgui/imstb_truetype.h"
++extern const unsigned char hookshot_font_strong[];
++#endif
++
+ namespace mkwvk {
+ namespace {
+ 
+@@ -354,42 +361,25 @@ struct TextMask {
+     int w = 0, h = 0;
+     std::vector<uint8_t> cov;
+ };
++#ifdef _WIN32
+ HFONT text_font(int px) {
+     return CreateFontA(-px, 0, 0, 0, FW_BOLD, 0, 0, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY,
+                        DEFAULT_PITCH, "Segoe UI");
+ }
+-#ifdef _WIN32
+ std::wstring wide(const char* s) {
+     const int n = MultiByteToWideChar(CP_UTF8, 0, s, -1, nullptr, 0);
+     std::wstring w(n > 0 ? n - 1 : 0, L'\0');
+     if (n > 1) MultiByteToWideChar(CP_UTF8, 0, s, -1, w.data(), n);
+     return w;
+ }
+-#else
+-std::string latin1(const char* s) {   // (the POSIX GDI stand-in draws a byte a letter: Latin-1, '?' past it)
+-    std::string o;
+-    for (const unsigned char* p = (const unsigned char*)s; *p;) {
+-        unsigned cp = *p, n = cp < 0x80 ? 1 : (cp >> 5) == 6 ? 2 : (cp >> 4) == 14 ? 3 : 4;
+-        if (n == 2 && p[1]) cp = (cp & 31) << 6 | (p[1] & 63);
+-        for (unsigned k = 0; k < n && *p; k++) p++;
+-        o += cp < 256 && (n <= 2) ? (char)cp : '?';
+-    }
+-    return o;
+-}
+-#endif
+ // the size of text at px pixels
+ void text_size(const char* s, int px, int* w, int* h) {
+     HDC dc = CreateCompatibleDC(nullptr);
+     HFONT f = text_font(px);
+     HGDIOBJ old = SelectObject(dc, f);
+     SIZE sz{};
+-#ifdef _WIN32
+     const std::wstring t = wide(s);
+     GetTextExtentPoint32W(dc, t.c_str(), (int)t.size(), &sz);
+-#else
+-    const std::string t = latin1(s);
+-    GetTextExtentPoint32A(dc, t.c_str(), (int)t.size(), &sz);
+-#endif
+     SelectObject(dc, old);
+     DeleteObject(f);
+     DeleteDC(dc);
+@@ -422,13 +412,8 @@ TextMask text_mask(const char* s, int px, int pad) {
+     HGDIOBJ old = SelectObject(dc, f);
+     SetBkMode(dc, TRANSPARENT);
+     SetTextColor(dc, RGB(255, 255, 255));
+-#ifdef _WIN32
+     const std::wstring t = wide(s);
+     TextOutW(dc, pad + 1, pad + 1, t.c_str(), (int)t.size());
+-#else
+-    const std::string t = latin1(s);
+-    TextOutA(dc, pad + 1, pad + 1, t.c_str(), (int)t.size());
+-#endif
+     GdiFlush();
+     m.cov.resize((size_t)m.w * m.h);
+     const uint32_t* p = (const uint32_t*)bits;
+@@ -443,6 +428,56 @@ TextMask text_mask(const char* s, int px, int pad) {
+     DeleteDC(dc);
+     return m;
+ }
++#else
++// Rasterize the bundled UI font directly: Linux does not provide the Windows GDI API.
++TextMask text_mask(const char* s, int px, int pad) {
++    TextMask m;
++    stbtt_fontinfo font{};
++    if (!stbtt_InitFont(&font, hookshot_font_strong, stbtt_GetFontOffsetForIndex(hookshot_font_strong, 0))) return m;
++    const float scale = stbtt_ScaleForPixelHeight(&font, (float)px);
++    std::vector<int> chars;
++    for (const unsigned char* p = (const unsigned char*)s; *p;) {
++        unsigned c = *p++;
++        if (c >= 0xc2 && c <= 0xf4) {
++            unsigned n = c < 0xe0 ? 1 : c < 0xf0 ? 2 : 3;
++            c &= n == 1 ? 31 : n == 2 ? 15 : 7;
++            while (n-- && *p && (*p & 0xc0) == 0x80) c = (c << 6) | (*p++ & 63);
++        }
++        chars.push_back((int)c);
++    }
++    float width = 0;
++    for (size_t i = 0; i < chars.size(); i++) {
++        int advance = 0; stbtt_GetCodepointHMetrics(&font, chars[i], &advance, nullptr);
++        width += advance * scale;
++        if (i + 1 < chars.size()) width += stbtt_GetCodepointKernAdvance(&font, chars[i], chars[i + 1]) * scale;
++    }
++    int ascent = 0, descent = 0, gap = 0;
++    stbtt_GetFontVMetrics(&font, &ascent, &descent, &gap);
++    m.w = std::max(1, (int)std::ceil(width) + 2 * pad + 4);
++    m.h = std::max(1, (int)std::ceil((ascent - descent) * scale) + 2 * pad + 4);
++    m.cov.assign((size_t)m.w * m.h, 0);
++    float x = (float)pad + 2;
++    const int baseline = pad + 2 + (int)std::ceil(ascent * scale);
++    for (size_t i = 0; i < chars.size(); i++) {
++        int gw, gh, xoff, yoff;
++        unsigned char* bitmap = stbtt_GetCodepointBitmap(&font, scale, scale, chars[i], &gw, &gh, &xoff, &yoff);
++        for (int y = 0; bitmap && y < gh; y++) for (int xx = 0; xx < gw; xx++) {
++            const int dx = (int)x + xoff + xx, dy = baseline + yoff + y;
++            if (dx >= 0 && dx < m.w && dy >= 0 && dy < m.h)
++                m.cov[(size_t)dy * m.w + dx] = std::max(m.cov[(size_t)dy * m.w + dx], bitmap[y * gw + xx]);
++        }
++        stbtt_FreeBitmap(bitmap, nullptr);
++        int advance = 0; stbtt_GetCodepointHMetrics(&font, chars[i], &advance, nullptr);
++        x += advance * scale;
++        if (i + 1 < chars.size()) x += stbtt_GetCodepointKernAdvance(&font, chars[i], chars[i + 1]) * scale;
++    }
++    return m;
++}
++void text_size(const char* s, int px, int* w, int* h) {
++    const TextMask m = text_mask(s, px, 0);
++    *w = m.w; *h = m.h;
++}
++#endif
+ // text with a dark outline o pixels wide, centred on (cx, cy)
+ void text(Canvas& c, const char* s, int px, float cx, float cy, const Rgba& col, int o) {
+     if (!*s) return;
+diff --git a/host/hos_main.c b/host/hos_main.c
+index 746b0317..166e5fcf 100644
+--- a/host/hos_main.c
++++ b/host/hos_main.c
+@@ -794,6 +794,7 @@ static const unsigned char oot_item_kinds[] = {OOT_CHEAT_ITEMS(OOT_NO_SECTION, O
+ static int oot_item_count(Ctx *c, const char *name);
+ static int oot_gamedata_bool(Ctx *c, uint32_t hash, int *value);
+ static int oot_gamedata_set_bool(Ctx *c, uint32_t hash, int value);
++static int oot_gamedata_queue_bool(Ctx *c, uint32_t hash, int value);
+ static uint64_t oot_gamedata_int_at(Ctx *c, uint32_t hash);
+ #define OOT_RUPEES_HASH 0xa77921d7u   /* PlayerStatus.CurrentRupee (Int) */
+ static int oot_gamedata_string(Ctx *c, uint32_t hash, char *buf, size_t size);
+@@ -894,11 +895,11 @@ static void oot_inventory_edit(Ctx *c, int action) {
+     const uint32_t song = oot_song_flag(name);
+     if (song) {
+         if (op != 200 || have < 0) return;   /* songs have no editable quantity */
+-        if (!oot_gamedata_set_bool(c, song, !have)) {
++        if (!oot_gamedata_queue_bool(c, song, !have)) {
+             hos_log("cheats: song %s: learned flag unavailable", name);
+             return;
+         }
+-        hos_log("cheats: song %s %s (had %d, now %d)", name, have ? "relocked" : "unlocked", have, oot_item_count(c, name));
++        hos_log("cheats: song %s %s queued (was %d)", name, have ? "relock" : "unlock", have);
+         return;
+     }
+     char alias[64];
+@@ -1276,6 +1277,260 @@ static int oot_gamedata_set_bool(Ctx *c, uint32_t hash, int value) {
+     return 0;
+ }
+ 
++/* The game's setter queues changes for both the live value and the save copy.
++   Calling it as a guest function may clobber registers, so preserve the context. */
++static int oot_gamedata_queue_bool(Ctx *c, uint32_t hash, int value) {
++    const uint64_t mgr = oot_singleton(c, OOT_GAMEDATA_SLOT);
++    A64Fn set = a64_lookup(0x806a2b20ULL);
++    int current = 0;
++    if (!mgr || !set || !oot_gamedata_bool(c, hash, &current)) return 0;
++    Ctx saved = *c;
++    c->x[0] = mgr, c->x[1] = value ? 1 : 0, c->x[2] = hash;
++    set(c);
++    *c = saved;
++    return 1;
++}
++
++/* Generated only into a validated randomized-profile runtime environment. Keep
++   this list limited to the map/compass flags verified in GameDataList. */
++static void HAL_oot_rando_starting_dungeon_flags(Ctx *c) {
++#if defined(HOOKSHOT_DEV_RANDOMIZER)
++    static const uint32_t allowed[] = {
++        0x89787395u, 0x06c51ff2u, 0xa52c3a19u, 0x8b93edf9u,
++        0xfcadd210u, 0x9a2218dbu, 0x77c47ec9u, 0x9d6efaacu,
++        0xb85002bau, 0x9bd1181cu,
++    };
++    const char *value = getenv("HOS_RANDO_STARTING_DUNGEON_FLAGS");
++    static char previous[256];
++    static uint32_t flags[10];
++    static unsigned count, logged;
++    static int64_t next_check;
++    if (!value || !*value || strlen(value) >= sizeof previous) {
++        previous[0] = 0; count = logged = 0; next_check = 0;
++        return;
++    }
++    if (strcmp(previous, value)) {
++        memcpy(previous, value, strlen(value) + 1);
++        count = logged = 0; next_check = 0;
++        const char *p = value;
++        while (*p && count < sizeof flags / sizeof flags[0]) {
++            char *end = NULL;
++            const unsigned long parsed = strtoul(p, &end, 16);
++            int known = 0;
++            for (unsigned i = 0; i < sizeof allowed / sizeof allowed[0]; i++)
++                if (allowed[i] == (uint32_t)parsed) known = 1;
++            if (end == p || parsed > UINT32_MAX || !known || (count && parsed == flags[count - 1]) ||
++                (*end && *end != ',')) { count = 0; previous[0] = 0; return; }
++            flags[count++] = (uint32_t)parsed;
++            p = *end ? end + 1 : end;
++        }
++        if (*p) { count = 0; previous[0] = 0; return; }
++        hos_log_at(HOS_LOG_DEBUG, "randomizer: received starting dungeon flags: %s", value);
++    }
++    /* Save data can finish loading after Link's first update, and a profile can
++       switch slots without restarting Hookshot. Reconcile periodically so a
++       later load cannot overwrite the seed's starting-item grants. */
++    const int64_t now = hos_now_ns();
++    if (now < next_check) return;
++    next_check = now + 1000000000LL;
++    for (unsigned i = 0; i < count; i++) {
++        int current = 0;
++        if (!oot_gamedata_bool(c, flags[i], &current)) continue; /* manager not ready yet */
++        if (!current && !oot_gamedata_queue_bool(c, flags[i], 1)) continue;
++        if (!(logged & (1u << i))) {
++            hos_log_at(HOS_LOG_DEBUG, "randomizer: starting dungeon flag %08X is active", flags[i]);
++            logged |= 1u << i;
++        }
++    }
++#else
++    (void)c;
++#endif
++}
++
++/* Permanent seed-local equipment: recheck after save loads and slot changes. */
++static void HAL_oot_rando_starting_equipment(Ctx *c) {
++#if defined(HOOKSHOT_DEV_RANDOMIZER)
++    static const struct { const char *name; unsigned bit; } items[] = {
++        {"Weapon_Sword_Kokiri", 1}, {"Weapon_Range_SlingShot", 2}, {"Item_BombBag_Small", 4},
++        {"Item_Boomerang", 8}, {"Item_GlassTruth", 16}, {"Weapon_Shield_Deku", 32}, {"Item_Ocarina_Fairy", 64},
++    };
++    const char *value = getenv("HOS_RANDO_STARTING_EQUIPMENT");
++    if (!value || !*value) return;
++    char *end = NULL;
++    const unsigned long mask = strtoul(value, &end, 10);
++    if (end == value || *end || mask > 127) return;
++    static int64_t next_check;
++    const int64_t now = hos_now_ns();
++    if (now < next_check) return;
++    next_check = now + 1000000000LL;
++    for (unsigned i = 0; i < sizeof items / sizeof items[0]; i++) {
++        if (!(mask & items[i].bit)) continue;
++        if (items[i].bit == 32) {   /* a Deku Shield can burn: the starting grant is once per save */
++            int acquired = 0;
++            if (!oot_gamedata_bool(c, 0x5217da1eu, &acquired) || acquired) continue; /* IsGet.Weapon_Shield_Deku */
++            int held = oot_pouch_count(c, items[i].name);
++            if (held == 0 && oot_pouch_change(c, items[i].name, 1) >= 0)
++                held = oot_pouch_count(c, items[i].name);
++            if (held > 0) oot_gamedata_queue_bool(c, 0x5217da1eu, 1);
++            continue;
++        }
++        if (items[i].bit == 4 && (oot_pouch_count(c, "Item_BombBag_Medium") > 0 ||
++                                  oot_pouch_count(c, "Item_BombBag_Large") > 0)) continue;
++        if (items[i].bit == 64 && oot_pouch_count(c, "Item_Ocarina_Time") > 0) continue;
++        const int held = oot_pouch_count(c, items[i].name);
++        if (held == 0) oot_pouch_change(c, items[i].name, 1);
++        if (items[i].bit == 2 && oot_pouch_count(c, items[i].name) > 0) {
++            /* A direct pouch grant does not run the slingshot's get event: in
++               game it otherwise appears with 0/0 seeds. Preserve any capacity
++               or upgraded bag already present in this save. */
++            const uint64_t at = oot_gamedata_int_at(c, 0xae8cc742u); /* seed-bag capacity */
++            if (!at || recomp_load32(c, at) != 0) continue;
++            int small = oot_pouch_count(c, "Item_BulletBag_Small");
++            const int medium = oot_pouch_count(c, "Item_BulletBag_Medium");
++            const int large = oot_pouch_count(c, "Item_BulletBag_Large");
++            if (small < 0 || medium < 0 || large < 0) continue;
++            if (!small && !medium && !large) {
++                if (oot_pouch_change(c, "Item_BulletBag_Small", 1) < 0) continue;
++                small = oot_pouch_count(c, "Item_BulletBag_Small");
++            }
++            if ((small > 0 || medium > 0 || large > 0) && recomp_load32(c, at) == 0)
++                recomp_store32(c, at, large > 0 ? 50 : medium > 0 ? 40 : 30);
++        }
++    }
++#else
++    (void)c;
++#endif
++}
++
++/* Recover the vanilla Emerald only after both Gohma and the quest are complete.
++   Existing saves affected by a skipped reward need the same repair as new ones. */
++static void HAL_oot_rando_stone_reward(Ctx *c) {
++#if defined(HOOKSHOT_DEV_RANDOMIZER)
++    const char *enabled = getenv("HOS_RANDO_STONE_REWARD_FALLBACK");
++    if (!enabled || strcmp(enabled, "1")) return;
++    static int64_t next_check;
++    const int64_t now = hos_now_ns();
++    if (now < next_check) return;
++    next_check = now + 1000000000LL;
++    int defeated = 0, acquired = 0;
++    int64_t step = 0;
++    extern int hos_oot_gamedata_enum(uint32_t hash, int64_t *value);
++    if (!oot_gamedata_bool(c, 0x6b093b51u, &defeated) || !defeated || /* Gohma_DefeatBoss */
++        !hos_oot_gamedata_enum(0x7d776b61u, &step) || (uint32_t)step != 0x4c0a63f4u || /* quest Complete */
++        !oot_gamedata_bool(c, 0x110b83ecu, &acquired) || acquired) return; /* IsGet.Item_Stone_Forest */
++    int held = oot_pouch_count(c, "Item_Stone_Forest");
++    if (held == 0) oot_pouch_change(c, "Item_Stone_Forest", 1);
++#else
++    (void)c;
++#endif
++}
++
++/* Songs are saved IsGet flags, not pouch items. */
++static void HAL_oot_rando_starting_songs(Ctx *c) {
++#if defined(HOOKSHOT_DEV_RANDOMIZER)
++    static const char *const songs[] = {
++        "Item_Melody_ZeldaLullaby", "Item_Melody_EponaSong", "Item_Melody_SariaSong", "Item_Melody_SunSong",
++        "Item_Melody_TimeSong", "Item_Melody_StormSong", "Item_Melody_ForestMinuet", "Item_Melody_FireBolero",
++        "Item_Melody_WaterSerenade", "Item_Melody_ShadowNocturne", "Item_Melody_SpiritRequiem", "Item_Melody_LightPrelude"
++    };
++    const char *value = getenv("HOS_RANDO_STARTING_SONGS");
++    if (!value || !*value) return;
++    char *end = NULL;
++    const unsigned long mask = strtoul(value, &end, 10);
++    if (end == value || *end || mask > 4095) return;
++    static int64_t next_check;
++    const int64_t now = hos_now_ns();
++    if (now < next_check) return;
++    next_check = now + 1000000000LL;
++    for (unsigned i = 0; i < sizeof songs / sizeof songs[0]; i++) {
++        if (!(mask & (1u << i))) continue;
++        int learned = 0;
++        const uint32_t flag = oot_song_flag(songs[i]);
++        if (flag && oot_gamedata_bool(c, flag, &learned) && !learned) oot_gamedata_queue_bool(c, flag, 1);
++    }
++#else
++    (void)c;
++#endif
++}
++
++/* The castle stealth skip grants its story items once per save. The saved
++   IsGet flag prevents a consumed or traded letter from being recreated. */
++static void HAL_oot_rando_child_stealth(Ctx *c) {
++#if defined(HOOKSHOT_DEV_RANDOMIZER)
++    const char *enabled = getenv("HOS_RANDO_CHILD_STEALTH");
++    if (!enabled || strcmp(enabled, "1")) return;
++    static int64_t next_check;
++    const int64_t now = hos_now_ns();
++    if (now < next_check) return;
++    next_check = now + 1000000000LL;
++    int acquired = 0;
++    if (oot_gamedata_bool(c, 0xf19393b5u, &acquired) && !acquired) { /* IsGet.Item_ZeldaLetter */
++        int held = oot_pouch_count(c, "Item_ZeldaLetter");
++        if (held == 0 && oot_pouch_change(c, "Item_ZeldaLetter", 1) >= 0)
++            held = oot_pouch_count(c, "Item_ZeldaLetter");
++        if (held > 0) oot_gamedata_queue_bool(c, 0xf19393b5u, 1);
++    }
++    /* Song shuffling is not implemented yet. Refuse an unknown song rather
++       than silently granting Lullaby for a different seed reward. */
++    const char *song = getenv("HOS_RANDO_CHILD_STEALTH_SONG");
++    if (!song || !*song || !strcmp(song, "Item_Melody_ZeldaLullaby")) {
++        int learned = 0;
++        if (oot_gamedata_bool(c, 0x01c20002u, &learned) && !learned)
++            oot_gamedata_queue_bool(c, 0x01c20002u, 1); /* IsGet.Item_Melody_ZeldaLullaby */
++    }
++#else
++    (void)c;
++#endif
++}
++
++/* IsGet flags are per-save, persistent and start false. They prevent spent
++   consumables from being refilled on later loads of the same slot. */
++static void HAL_oot_rando_starting_consumables(Ctx *c) {
++#if defined(HOOKSHOT_DEV_RANDOMIZER)
++    static const struct { const char *item, *bag; uint32_t acquired, capacity; int max; } items[] = {
++        {"Item_DekuStick", "Item_StickBag_Small", 0xc4e21ac2u, 0x457616b0u, 10},
++        {"Item_DekuNut", "Item_NutBag_Small", 0x00c2ee37u, 0x735b00f7u, 20},
++        {"Item_DekuSeed", NULL, 0x29888e1eu, 0xae8cc742u, 30},
++        {"Item_Bomb", NULL, 0x2bb00768u, 0xe753508bu, 20},
++    };
++    const char *value = getenv("HOS_RANDO_STARTING_CONSUMABLES");
++    if (!value || !*value) return;
++    int amounts[4]; const char *p = value;
++    for (unsigned i = 0; i < 4; i++) {
++        if (*p < '0' || *p > '9') return;
++        char *end = NULL; long n = strtol(p, &end, 10);
++        if (n < 0 || n > items[i].max || (i < 3 ? *end != ',' : *end != '\0')) return;
++        amounts[i] = (int)n; p = i < 3 ? end + 1 : end;
++    }
++    static int64_t next_check;
++    const int64_t now = hos_now_ns();
++    if (now < next_check) return;
++    next_check = now + 1000000000LL;
++    for (unsigned i = 0; i < 4; i++) {
++        if (!amounts[i]) continue;
++        int acquired = 0;
++        if (!oot_gamedata_bool(c, items[i].acquired, &acquired) || acquired) continue;
++        uint64_t capacity = oot_gamedata_int_at(c, items[i].capacity);
++        if (!capacity) continue;
++        int cap = (int)(int32_t)recomp_load32(c, capacity);
++        if (cap < amounts[i]) {
++            if (items[i].bag && oot_pouch_count(c, items[i].bag) == 0)
++                oot_pouch_change(c, items[i].bag, 1);
++            continue;
++        }
++        int have = oot_pouch_count(c, items[i].item);
++        if (have < 0) continue;
++        if (have < amounts[i]) {
++            if (oot_pouch_change(c, items[i].item, amounts[i] - have) < 0) continue;
++            have = oot_pouch_count(c, items[i].item);
++        }
++        if (have >= amounts[i]) oot_gamedata_queue_bool(c, items[i].acquired, 1);
++    }
++#else
++    (void)c;
++#endif
++}
++
+ /* A GameData int's value, found as oot_gamedata_set_bool finds a bool: the ints are the container at GameDataMgr+0xc8 (its
+    entry count at +0xd0, 40-byte entries at +0xd8 with the value at +28, the (hash, index) table at +0xe0, +0xec its size), as
+    host/oot_state_tap.c reads them. The value's guest address, 0 when the save has none. */
+@@ -1707,6 +1962,14 @@ static void oot_update_player_cheats(Ctx *c, uint64_t actor, uint64_t components
+         else if (asked) action = OOT_TELEPORT_ACTION + asked - 1;
+     }
+     oot_teleport_followup(c);
++#if defined(HOOKSHOT_DEV_RANDOMIZER)
++    HAL_oot_rando_starting_dungeon_flags(c);
++    HAL_oot_rando_starting_equipment(c);
++    HAL_oot_rando_stone_reward(c);
++    HAL_oot_rando_starting_songs(c);
++    HAL_oot_rando_starting_consumables(c);
++    HAL_oot_rando_child_stealth(c);
++#endif
+     oot_inventory_refresh(c, now);
+     oot_player_speed(c, components);
+     oot_map_refresh(c, now);
+diff --git a/host/hos_memsplit.c b/host/hos_memsplit.c
+index 2496c948..2e1971a7 100644
+--- a/host/hos_memsplit.c
++++ b/host/hos_memsplit.c
+@@ -4,6 +4,7 @@
+    data, uniform blocks), by the pool's flags. A measurement for docs/native-engine/memory-boundary.md: RAM is the
+    resident pages, not the committed ones. Windows only. */
+ #include "hos.h"
++#include "../gpu/vk/compat/hookshot_env.h"
+ #include "hos_guestpages.h"
+ #include <stdio.h>
+ #include <stdlib.h>
+@@ -604,8 +605,7 @@ static DWORD WINAPI trap_main(void *p) {
+ 
+ static void trap_init(void) {
+     const char *e = getenv("HOS_POOL_TRAP");
+-    const char *nw = getenv("HOS_POOL_TRAP_NEW");
+-    const int fresh = nw && atoi(nw) != 0;
++    const int fresh = env_on("HOS_POOL_TRAP_NEW");
+     if (!fresh && !(e && atoi(e) > 0)) return;
+     const char *fl = getenv("HOS_POOL_TRAP_FLAGS");
+     if (!fl || !*fl) fl = "24,64,22";
+diff --git a/host/hos_thread.c b/host/hos_thread.c
+index 3cbde2b8..0dea6d6e 100644
+--- a/host/hos_thread.c
++++ b/host/hos_thread.c
+@@ -575,7 +575,7 @@ static HosThread *thread_of_scan(uint64_t guest_tt) {
+ }
+ HosThread *hos_thread_of(uint64_t guest_tt) {
+     static int on = -1;
+-    if (on < 0) on = getenv("HOS_THREAD_OF_CACHE") && atoi(getenv("HOS_THREAD_OF_CACHE")) != 0;
++    if (on < 0) on = env_on("HOS_THREAD_OF_CACHE");
+     if (!on) return thread_of_scan(guest_tt);
+     static _Thread_local struct { uint64_t tt; HosThread *t; LONG gen; } cache[8];
+     const unsigned i = (unsigned)((guest_tt >> 4) * 0x9E3779B1u >> 7) & 7;
+@@ -1383,7 +1383,7 @@ static void sleep_ns(int64_t ns, int guest) {
+         /* TICK-062 B4, HOS_SHORT_SLEEP_PAUSE=1: one yield, then a PAUSE loop to the deadline (SwitchToThread in a loop
+            keeps calling into the kernel and bounces the SMT sibling's work) */
+         static int pause_spin = -1;
+-        if (pause_spin < 0) pause_spin = getenv("HOS_SHORT_SLEEP_PAUSE") && atoi(getenv("HOS_SHORT_SLEEP_PAUSE")) != 0;
++        if (pause_spin < 0) pause_spin = env_on("HOS_SHORT_SLEEP_PAUSE");
+         if (pause_spin) {
+             if (hos_now_ns() < until) SwitchToThread();
+             while (hos_now_ns() < until) { YieldProcessor(); YieldProcessor(); YieldProcessor(); YieldProcessor(); }
+diff --git a/host/mods.c b/host/mods.c
+index bade8484..08364ddc 100644
+--- a/host/mods.c
++++ b/host/mods.c
+@@ -123,12 +123,22 @@ static char sizes_rel[MAX_PATH];   /* the game's table, its RomFS path ("System/
+ static char sizes_key[MAX_PATH];   /* the same, lower case */
+ static char sizes_served[MAX_PATH];   /* the table served in the game's place: the merged one, or a mod's as it is (merge_failed) */
+ static int sizes_merged;              /* sizes_served is the merged table */
++static int sizes_guessed;             /* no game RomFS: its version is known only when a table is requested */
+ static char sizes_fallback[MAX_PATH]; /* no merge: the last enabled mod's own table for this version, served as host/prompts.c makes it */
+ static int is_sizes(const char *key) {   /* (any version's: lower case) */
+     const size_t n = strlen(key);
+     return !strncmp(key, "system/resource/resourcesizetable.", 34) && n > 14 && !strcmp(key + n - 14, ".rsizetable.zs");
+ }
+ 
++/* Without the game's RomFS, selecting the first shipped version can pick the
++   wrong one. Resolve the requested name exactly, with the last enabled mod winning. */
++static const char *shipped_sizes(const char *key) {
++    const char *found = NULL;
++    for (int s = 0; s < nshipped; s++)
++        if (mods[shipped[s].mod].enabled && !strcmp(shipped[s].key, key)) found = shipped[s].host;
++    return found;
++}
++
+ /* the game file a RomFS path names: 1 with its host path */
+ static int game_file(const char *rel, char *out, size_t cap) {
+     if (!hos_romfs_dir) return 0;
+@@ -595,8 +605,9 @@ void hos_mods_init(const char *image_path) {
+     }
+     exefs_status(game_dir);
+     /* (the table served when no merged one is: the last enabled mod's own, host/prompts.c merging the prompts' entries into it.
+-       Without the game's RomFS to tell its name, the first table a mod has stands for it) */
++       Without the game's RomFS, keep a provisional name; lookup uses the requested name once known) */
+     if (!sizes_key[0] && nshipped) {
++        sizes_guessed = 1;
+         snprintf(sizes_key, sizeof sizes_key, "%s", shipped[0].key);
+         for (int s = 0; s < nshipped; s++) shipped[s].other = strcmp(shipped[s].key, sizes_key) != 0;
+     }
+@@ -617,6 +628,17 @@ int hos_mods_romfs(const char *rel, char *out, size_t cap) {
+     int hos_prompts_romfs(const char *key, const char *mod, char *out, size_t cap);   /* prompts.c: the button prompts */
+     int hos_texts_romfs(const char *key, const char *mod, char *out, size_t cap);   /* texts.c: the texts' PC wording */
+     int hos_event_skip_romfs(const char *key, const char *mod, char *out, size_t cap);   /* event_skip.c: every cutscene skippable */
++    if (sizes_guessed && is_sizes(key)) {
++        const char *mod = shipped_sizes(key);
++        if (mod) {
++            const int merged = hos_prompts_romfs(key, mod, out, cap);
++            if (!merged) snprintf(out, cap, "%s", mod);
++            static volatile LONG told_guessed;
++            if (InterlockedIncrement(&told_guessed) == 1)
++                hos_log("mods: %s <- %s%s", rel, mod, merged ? " (with the button prompts' sizes merged in)" : "");
++            return 1;
++        }
++    }
+     if (sizes_served[0] && !strcmp(key, sizes_key)) {   /* (the merged size table: the prompts' entries are in it) */
+         snprintf(out, cap, "%s", sizes_served);
+         static volatile LONG told;
+@@ -649,6 +671,10 @@ int hos_mods_file(const char *rel, char *out, size_t cap) {
+     char key[MAX_PATH];
+     snprintf(key, sizeof key, "%s", rel);
+     lower_slash(key);
++    if (sizes_guessed && is_sizes(key)) {
++        const char *mod = shipped_sizes(key);
++        if (mod) { snprintf(out, cap, "%s", mod); return 1; }
++    }
+     if (sizes_key[0] && !strcmp(key, sizes_key)) {
+         if (sizes_served[0]) return 0;
+         if (sizes_fallback[0]) {
+diff --git a/host/oot_state_tap.c b/host/oot_state_tap.c
+index d16e25fc..856c94e9 100644
+--- a/host/oot_state_tap.c
++++ b/host/oot_state_tap.c
+@@ -22,6 +22,8 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <time.h>
++#include "../gpu/vk/compat/hookshot_env.h"
+ #include <windows.h>   /* (LONG64, InterlockedCompareExchange64; on Linux host/posix's) */
+ 
+ extern volatile LONG64 hos_present_count;   /* (host/nvn_native.c: the game's presents) */
+@@ -165,6 +167,12 @@ int hos_oot_gamedata_int(uint32_t hash, int64_t *v) {
+     return mgr && state_number(mgr, KIND_INT, hash, v);
+ }
+ 
++/* The saved hash of an Enum value, for reviewed runtime progression checks. */
++int hos_oot_gamedata_enum(uint32_t hash, int64_t *v) {
++    const uint64_t mgr = state_u64(state_u64(STATE_GAMEDATA_SLOT));
++    return mgr && state_number(mgr, KIND_ENUM, hash, v);
++}
++
+ /* (host/oot_heart_containers.c, on Link's update as above: the boss heart containers taken) a Bool64bitKey flag of the
+    game data, the kind named by an actor's 64-bit placement id: 1 set, 0 not, -1 not known. Their container is at
+    GameDataMgr + 0xc58 (the game's f_80e1f1c0 hands that to its loader, f_805ce6b0): the count (u32) at +0, the entries at +8,
+@@ -263,6 +271,133 @@ typedef struct {
+ } StateSeen;
+ static StateSeen state_seen[STATE_TRACKED];
+ static int state_scan_kind;
++static int state_scan(uint64_t mgr, StateChanges *out);
++
++/* F9 brackets a local gameplay trace: write it to logs/gameplay_trace.txt as well as the regular
++   launcher log, so it is easy to find after play. This is deliberately separate from the Vulkan
++   renderer's frame dump key. */
++static FILE *state_trace_file;
++static char state_trace_path[96];
++#define STATE_TRACE_EVENT_WORDS 24u
++static uint64_t state_trace_event_words[STATE_TRACE_EVENT_WORDS];
++static uint64_t state_trace_event_context;
++static int state_trace_event_words_valid;
++static void state_trace_log(const char *fmt, ...) {
++    char line[512];
++    va_list args;
++    va_start(args, fmt);
++    vsnprintf(line, sizeof line, fmt, args);
++    va_end(args);
++    hos_log("%s", line);
++    if (state_trace_file) {
++        fprintf(state_trace_file, "%s\n", line);
++        fflush(state_trace_file);
++    }
++}
++
++/* The EventMgr exposes its current context pointer, but not a public flow/action name.
++   Capture a small bounded window from that live context so repeated Navi actions can be
++   distinguished and the fields decoded against the local EventFlow resources. */
++static void state_trace_event_context_words(uint64_t context) {
++    if (!context) {
++        state_trace_event_words_valid = 0;
++        state_trace_event_context = 0;
++        return;
++    }
++    const int fresh = !state_trace_event_words_valid || state_trace_event_context != context;
++    for (unsigned i = 0; i < STATE_TRACE_EVENT_WORDS; i++) {
++        uint64_t value = 0;
++        const int readable = state_peek(context + (uint64_t)i * 8, &value, sizeof value);
++        if (!readable) continue;
++        if (fresh || value != state_trace_event_words[i])
++            state_trace_log("gameplay trace: event context +%03x %s=%016llx",
++                    i * 8, fresh ? "word" : "changed",
++                    (unsigned long long)value);
++        state_trace_event_words[i] = value;
++    }
++    state_trace_event_context = context;
++    state_trace_event_words_valid = 1;
++}
++
++static void state_debug_key(void) {
++    static int enabled = -1, was_down, tracing, baseline, last_event = -1;
++    static uint64_t last_event_ptr;
++    static uint64_t change_count;
++    if (enabled < 0) {
++        enabled = env_on("HOS_DEBUG_KEY");
++    }
++    if (!enabled) return;
++    const int down = (GetAsyncKeyState(VK_F9) & 0x8000) != 0;
++    if (down && !was_down) {
++        tracing = !tracing;
++        if (tracing) {
++            time_t now = time(NULL);
++            struct tm local;
++#ifdef _WIN32
++            const int have_time = localtime_s(&local, &now) == 0;
++#else
++            const int have_time = localtime_r(&now, &local) != NULL;
++#endif
++            const size_t path_len = have_time ? strftime(state_trace_path, sizeof state_trace_path,
++                                                         "logs/gameplay_trace_%Y-%m-%d_%H-%M-%S.log", &local) : 0;
++            state_trace_file = path_len ? fopen(state_trace_path, "w") : NULL;
++            if (!state_trace_file) hos_log("gameplay trace: could not create timestamped capture in logs/");
++            else state_trace_log("gameplay trace: capture file %s", state_trace_path);
++            baseline = 0;
++            change_count = 0;
++            last_event = -1;
++            for (int i = 0; i < STATE_TRACKED; i++) {
++                state_seen[i].valid = 0;
++                state_seen[i].cursor = 0;
++                state_seen[i].changes = (StateChanges){0};
++            }
++            state_scan_kind = 0;
++            hos_log("[DEBUG] f9 Started");
++            state_trace_log("gameplay trace: F9 started; collecting GameData changes and event-context fields; press F9 to stop");
++        } else {
++            hos_log("[DEBUG] f9 Stopped");
++            state_trace_log("gameplay trace: F9 stopped; %llu changed GameData flags observed", (unsigned long long)change_count);
++            if (state_trace_file) fclose(state_trace_file), state_trace_file = NULL;
++        }
++    }
++    was_down = down;
++    if (!tracing) return;
++
++    const uint64_t mgr = state_u64(state_u64(STATE_GAMEDATA_SLOT));
++    const uint64_t event_mgr = state_u64(state_u64(STATE_EVENTMGR_SLOT));
++    const uint64_t event_ptr = event_mgr ? state_u64(event_mgr + 104) : 0;
++    const int event = event_ptr != 0;
++    if (last_event != event || last_event_ptr != event_ptr) {
++        state_trace_log("gameplay trace: event state %s (event context %#llx)", event ? "active" : "idle",
++                (unsigned long long)event_ptr);
++        last_event = event;
++        last_event_ptr = event_ptr;
++    }
++    state_trace_event_context_words(event_ptr);
++
++    StateChanges changes = {0};
++    const int scanning = state_scan(mgr, &changes);
++    if (!baseline && !scanning) {
++        baseline = 1;
++        state_trace_log("gameplay trace: GameData baseline ready");
++    }
++    for (unsigned i = 0; i < changes.n; i++) {
++        const StateChange *c = &changes.item[i];
++        const char *kind = c->kind == KIND_BOOL ? "Bool" : c->kind == KIND_INT ? "Int" :
++                           c->kind == KIND_ENUM ? "Enum" : "UInt";
++        if (c->kind == KIND_INT)
++            state_trace_log("gameplay trace: GameData %s hash=%08x value=%d", kind, c->key, (int)(int32_t)c->value);
++        else
++            state_trace_log("gameplay trace: GameData %s hash=%08x value=%u", kind, c->key, c->value);
++        change_count++;
++    }
++    if (changes.more) {
++        state_trace_log("gameplay trace: %u additional GameData changes omitted in this sample", changes.more);
++        change_count += changes.more;
++    }
++}
++
++
+ 
+ static void state_log_scan(void) {
+     static uint32_t reported[STATE_TRACKED];
+@@ -466,6 +601,7 @@ int hos_oot_poll(int slot, char *out, size_t cap) {
+ 
+ /* Each update of Link (actor: the one whose +0x31c is his position). Only this function reads guest memory. */
+ void hos_oot_state_tap(uint64_t actor) {
++    state_debug_key();
+     if (!hos_control_on) return;
+     const int64_t due = __atomic_load_n(&state_due, __ATOMIC_ACQUIRE);
+     if (due == INT64_MAX) return;
+diff --git a/host/zstd_native.c b/host/zstd_native.c
+index de2c6f4c..b640b961 100644
+--- a/host/zstd_native.c
++++ b/host/zstd_native.c
+@@ -18,6 +18,7 @@
+    HOS_ZSTD_NATIVE: 1 (default) native; 0 the lifted code; 2 both, compared on every call (the lifted run's result kept, a
+    difference logged): see zstd_compare. */
+ #include "hos.h"
++#include "../gpu/vk/compat/hookshot_env.h"
+ #include <stdlib.h>
+ #include <string.h>
+ 
+@@ -519,7 +520,7 @@ static void zstd_timed(Ctx *c, void (*self)(Ctx *), int native) {
+ int hos_zstd_seq(Ctx *c, void (*self)(Ctx *)) {
+     if (zstd_bypass) return 0;
+     static int timed = -1;
+-    if (timed < 0) timed = getenv("HOS_ZSTD_TIME") && atoi(getenv("HOS_ZSTD_TIME")) != 0;
++    if (timed < 0) timed = env_on("HOS_ZSTD_TIME");
+     const int mode = zstd_mode();
+     if (timed && mode != 2) {
+         zstd_timed(c, self, mode != 0);
+diff --git a/nx2/build.py b/nx2/build.py
+index 841b391b..0aa95747 100644
+--- a/nx2/build.py
++++ b/nx2/build.py
+@@ -1938,7 +1938,7 @@ def main():
+     # from elsewhere (FFmpeg, dav1d, the system's) is in extras, as before
+     host_fl = target() + CPU + (["-I" + POSIX, "-D_GNU_SOURCE"] if LINUX else []) + \
+         ["-I" + HOST, "-I" + rt64, "-I" + gen, "-I" + os.path.join(NATIVE, "include"), "-Wno-everything", "-O2", "-g0", "-mcx16",
+-         "-DA64_POLLING"] + WRITE_TRACK + \
++         "-DA64_POLLING"] + (["-DHOOKSHOT_DEV_RANDOMIZER=1"] if os.environ.get("HOOKSHOT_DEV_RANDOMIZER") == "1" else []) + WRITE_TRACK + \
+         (TRACY_FLAGS + ["-DTRACY_EXPORTS"] if TRACY else [])
+     # (each host file's key: the headers its last compile read (its depfile, renderer_deps) under these folders, the native
+     # engine's C surface (hl/c, what host/hl_*.c include) among them; every header there when it has none yet)
+@@ -2339,7 +2339,7 @@ def main():
+         # client's C API is exported for the back end's module)
+         r = run_link([toolchain.need(toolchain.find("clang++")) if TRACY else cc] + target() + ["-fuse-ld=lld", "-o", exe] +
+                      linker("-Map=" + exe + ".map") +
+-                     ["-Wl,--gc-sections"] + ["-Wl,--export-dynamic-symbol=" + s for s in HOST_EXPORTS] + ["@" + rsp] + HOT_ORDER() +
++                     ["-Wl,--gc-sections"] + linker(*("--export-dynamic-symbol=" + s for s in HOST_EXPORTS)) + ["@" + rsp] + HOT_ORDER() +
+                      (["-Wl,--export-dynamic-symbol=___tracy_*", "-static-libstdc++", "-static-libgcc"] if TRACY else []) +
+                      (FFMPEG_LX[1] if FFMPEG_LX else []) + HOST_LIBS +
+                      (["-l:libstdc++.a"] if SYSROOT else ["-lstdc++"]), exe)   # (native/'s C++: static with the AppImage's sysroot)
+diff --git a/nx2/make_game.py b/nx2/make_game.py
+index c9b22fef..4cb3d18e 100644
+--- a/nx2/make_game.py
++++ b/nx2/make_game.py
+@@ -649,6 +649,14 @@ def romfs_problem(romfs, nup=None):
+     second: its own allocator returned null. The game's RomFS has System/Resource/<the table above> and hundreds of folders.
+     nup: the romfs was read from this .nup file, whose code is the supported build's: a dump with the update's code and the
+     first version's files was built in full, and the game then said at each start that its files are another version's"""
++    missing = romfs_missing(romfs)
++    if missing:
++        if nup:
++            return ("Your .nup file %s does not hold all of the game's files (no %s): a game built from it could not start. "
++                    "Dump the game again and choose the complete dump in Hookshot Builder." % (nup, missing))
++        packed = (" It holds a romfs.bin, a packed copy of the game's files: extract it first."
++                  if os.path.isfile(os.path.join(long_path(romfs), "romfs.bin")) else "")
++        return "The romfs folder %s does not hold the game's files (no %s): choose the extracted RomFS.%s" % (romfs, missing, packed)
+     res = os.path.join(romfs, "System", "Resource")
+     if os.path.isfile(os.path.join(res, ROMFS_TABLE)):
+         return None
+@@ -1956,17 +1964,22 @@ def long_path(p):
+     return "\\\\?\\UNC\\" + p[2:] if p.startswith("\\\\") else "\\\\?\\" + p
+ 
+ 
+-def link_or_copy(src, dst):
+-    """the romfs by hard links where the disk allows: 26 GB not written twice"""
++def link_or_copy(src, dst, copy_only=False):
++    """Copy the romfs, using hard links where allowed unless independent files are requested."""
+     src, dst = long_path(src), long_path(dst)
+     files = [os.path.join(d, f) for d, _, fs in os.walk(src) for f in fs]
+     for i, s in enumerate(files):
+         t = os.path.join(dst, os.path.relpath(s, src))
+         os.makedirs(os.path.dirname(t), exist_ok=True)
+         if not os.path.exists(t):
+-            try:
+-                os.link(s, t)
+-            except OSError:
++            linked = False
++            if not copy_only:
++                try:
++                    os.link(s, t)
++                    linked = True
++                except OSError:
++                    pass
++            if not linked:
+                 # A retry skips existing targets, so publish the copy only after it is complete.
+                 fd, staged = tempfile.mkstemp(prefix=".romfs-", dir=os.path.dirname(t))
+                 try:
+@@ -2623,6 +2636,7 @@ def parse_args():
+     p.add_argument("--game", help="your copy: a .nup or .nx file, or a folder with romfs and exefs in it (the same as --nup, or --romfs and --exefs)")
+     p.add_argument("--prepare", action="store_true", help="for RecompLauncher: no window, progress lines, --out ~/Games/Hookshot unless given")
+     p.add_argument("--update", help="a game folder built before: built again from the game files it keeps (the game's update offer)")
++    p.add_argument("--copy-romfs", action="store_true", help="copy extracted game files independently instead of hard-linking them")
+     p.add_argument("--romfs-in-place", action="store_true", default=None,
+                    help="with --romfs (development: scripts/dev_packs.py): read the romfs where it is, without a copy or links in "
+                         "the game folder, which then has no romfs: the game is started with --romfs naming it. "
+@@ -2669,6 +2683,8 @@ def parse_args():
+     if a.romfs_in_place is None:   # (scripts/dev_packs.py sets it for the builds it runs; a tree from before ignores it and links)
+         a.romfs_in_place = (os.environ.get(ROMFS_IN_PLACE_ENV, "0") not in ("", "0") and bool(a.romfs)
+                             and not a.nup and not a.update)
++    if a.copy_romfs and (a.nup or a.update or a.romfs_in_place):
++        fail("--copy-romfs needs extracted game files and cannot be combined with --romfs-in-place or --update.")
+     a.default_work = p.get_default("work")   # (main: the builder's own work folder, stop_stray_compilers)
+     return a
+ 
+@@ -3018,7 +3034,7 @@ def main(a=None):
+         # the next build from the .nup those were read from took them as its own and was refused too)
+         check_supported_build(exefs)
+         if not in_place:
+-            link_or_copy(a.romfs, romfs)
++            link_or_copy(a.romfs, romfs, copy_only=getattr(a, "copy_romfs", False))
+         shutil.rmtree(kept, ignore_errors=True)
+         shutil.copytree(exefs, kept)
+         with contextlib.suppress(FileNotFoundError):   # (the copies are this dump's now, not the .nup's that stamp names)
+@@ -3409,6 +3425,18 @@ def main(a=None):
+                 f.write("builder_local=1\n")
+             elif os.environ.get("HOOKSHOT_BUILDER_EXE"):
+                 f.write("builder=%s\n" % os.environ["HOOKSHOT_BUILDER_EXE"])
++    if os.environ.get("HOOKSHOT_DEV_RANDOMIZER") == "1":
++        for name, value in (("hookshot_randomizer_capability.txt", "HOOKSHOT_DEV_RANDOMIZER=1\n"),
++                            ("hookshot_starting_inventory_capability.txt", "HOOKSHOT_STARTING_INVENTORY=6\n"),
++                            ("hookshot_child_stealth_capability.txt", "HOOKSHOT_CHILD_STEALTH=1\n"),
++                            ("hookshot_stone_reward_capability.txt", "HOOKSHOT_STONE_REWARD=1\n")):
++            with open(os.path.join(out, name), "w", encoding="utf-8", newline="\n") as f:
++                f.write(value)
++    else:
++        for name in ("hookshot_randomizer_capability.txt", "hookshot_starting_inventory_capability.txt", "hookshot_child_stealth_capability.txt", "hookshot_stone_reward_capability.txt"):
++            path = os.path.join(out, name)
++            if os.path.isfile(path) and not os.path.islink(path):
++                os.remove(path)
+     write_build_record(out, work, tag, fsr_wanted(a, out))
+     PHASES.part("pipeline lists, icon and stamps")
+     # (the game's code as read: written again by every build, so not left behind in the work folder. The translated code (sa\gen)
+diff --git a/nx2/saveedit/server.py b/nx2/saveedit/server.py
+index 7b4bda08..b2c917d0 100644
+--- a/nx2/saveedit/server.py
++++ b/nx2/saveedit/server.py
+@@ -11,10 +11,12 @@ Close the game before saving: a running game writes over the save files when it
+ Adapted from an MIT-licensed save editor (see LICENSE in this folder).
+ """
+ import argparse
++import hashlib
+ import json
+ import os
+ import sys
+ import time
++import uuid
+ from pathlib import Path
+ 
+ sys.path.insert(0, str(Path(__file__).resolve().parent))   # (python -I leaves this folder off the path)
+@@ -154,9 +156,11 @@ class Slot:
+     def __init__(self, paths):
+         self.paths = paths
+         self.files, self.by_hash, self.errors = {}, {}, []
++        self.original = {}
+         for kind, path in paths.items():
+             try:
+                 sf = nxsave.SaveFile(path)
++                self.original[kind] = hashlib.sha256(Path(path).read_bytes()).digest()
+             except (OSError, ValueError) as err:
+                 self.errors.append(f'{Path(path).name}: {err}')
+                 continue
+@@ -194,7 +198,7 @@ class Editor:
+     def bag_sizes(self, key):
+         _k, _label, size_h, _name_h, _prefix, sizes = next(b for b in cat.BAGS if b[0] == key)
+         now = self.val(size_h, default=0) or 0
+-        return now, [n for n in sizes if n >= now]
++        return now, [0, *sizes]
+ 
+     def limit(self, item):
+         _l, _i, bag, most = next(a for a in cat.AMOUNTS if a[1] == item)
+@@ -259,8 +263,9 @@ class Editor:
+         bags = []
+         for key, label, size_h, _name_h, _prefix, sizes in cat.BAGS:
+             now, may = self.bag_sizes(key)
+-            choices = ([now] if now not in sizes else []) + may
++            choices = ([now] if now not in (0, *sizes) else []) + may
+             bags.append({'key': key, 'label': label, 'now': now,
++                         'available': self.slot.get(size_h) is not None,
+                          'choices': [{'n': n, 'text': 'None' if n == 0 else f'{cat.SIZES[sizes.index(n)] if n in sizes else "?"} ({n})'}
+                                      for n in choices]})
+         st['bags'] = bags
+@@ -275,6 +280,7 @@ class Editor:
+                 bottles.append(next((i + 1 for i, (h, _l) in enumerate(cat.BOTTLE_CONTENTS) if h == c), 0))
+         st['bottle_choices'] = ['No bottle'] + [label for _h, label in cat.BOTTLE_CONTENTS]
+         st['bottles'] = bottles
++        st['bottle_available'] = [all(self.slot.get(field) is not None for field in bottle) for bottle in cat.BOTTLES]
+         st['keys'] = [{'label': label, 'n': self.val(entry), 'most': most} for label, entry, most in cat.SMALL_KEYS]
+         st['edited'] = self.slot.edited()
+         return st
+@@ -341,13 +347,20 @@ class Editor:
+         elif key.startswith('bag:'):
+             _k, _label, size_h, name_h, prefix, sizes = next(b for b in cat.BAGS if b[0] == key[4:])
+             n = self.number(value)
+-            if n in sizes:
+-                tier = sizes.index(n)
+-                self.put(size_h, n)
+-                for t in range(tier + 1):            # the smaller bags were found on the way
+-                    self.put(cat.stock(f'{prefix}_{cat.SIZES[t]}'), 1)
+-                if name_h:
+-                    self.put(name_h, f'{prefix}_{cat.SIZES[tier]}')
++            if n not in (0, *sizes):
++                raise ValueError(f'{_label}: choose an available bag size.')
++            tier = sizes.index(n) if n else -1
++            self.put(size_h, n)
++            for t in range(len(sizes)):
++                self.put(cat.stock(f'{prefix}_{cat.SIZES[t]}'), int(t <= tier))
++            if name_h:
++                self.put(name_h, f'{prefix}_{cat.SIZES[tier]}' if n else '')
++            # A smaller or removed bag cannot hold the previous ammunition.
++            for _amount_label, item, bag, _most in cat.AMOUNTS:
++                if bag == key[4:]:
++                    current = self.val(cat.stock(item))
++                    if current is not None and current > n:
++                        self.put(cat.stock(item), n)
+         elif key.startswith('n:'):
+             item = key[2:]
+             n = self.number(value)
+@@ -424,6 +437,29 @@ class Editor:
+         return self.r_stats(q)
+ 
+     # -- inventory
++    SONGS = ('ZeldaLullaby', 'EponaSong', 'SariaSong', 'SunSong', 'TimeSong', 'StormSong',
++             'ForestMinuet', 'FireBolero', 'WaterSerenade', 'ShadowNocturne', 'SpiritRequiem', 'LightPrelude')
++
++    def r_songs(self, q):
++        self.need_slot()
++        rows = []
++        for name in self.SONGS:
++            e = self.slot.get('IsGet.Item_Melody_' + name)
++            if e is not None and e.type == 'Bool' and e.editable and e.value is not None:
++                rows.append({'song': name, 'learned': bool(e.value)})
++        return {'songs': rows, 'edited': self.slot.edited()}
++
++    def r_set_song(self, q):
++        self.need_slot()
++        name, learned = q.get('song'), q.get('learned')
++        if name not in self.SONGS or not isinstance(learned, bool):
++            raise ValueError('Invalid song or learned state.')
++        e = self.slot.get('IsGet.Item_Melody_' + name)
++        if e is None or e.type != 'Bool' or not e.editable or e.value is None:
++            raise ValueError('This song is unavailable in this save.')
++        self.slot.files['progress'].set(e, learned)
++        return self.r_songs(q)
++
+     def item_state(self, item):
+         e = self.slot.get(cat.stock(item))
+         if e is None:
+@@ -491,6 +527,41 @@ class Editor:
+             self.give(x[0])
+         return {**self.r_items(q), 'done': len(missing)}
+ 
++    def r_progressive(self, q):
++        """Choose one reviewed progression tier; reject the whole change before touching any entry."""
++        self.need_slot()
++        groups = {
++            'ocarina': ('Item_Ocarina_Fairy', 'Item_Ocarina_Time'),
++            'hookshot': ('Item_Hookshot', 'Item_Longshot'),
++            'strength': ('Armor_Child_Gauntlet_Goron', 'Armor_Adult_Gauntlet_Silver', 'Armor_Adult_Gauntlet_Gold'),
++            'scale': ('Item_Scale_Silver', 'Item_Scale_Gold'),
++        }
++        items = groups.get(q.get('group'))
++        selected = q.get('item') or None
++        if not items or selected is not None and selected not in items:
++            raise ValueError('Unknown progression choice.')
++        if any((e := self.slot.get(cat.stock(item))) is None or not e.editable or e.type not in ('Int', 'UInt')
++               for item in items):
++            raise ValueError('This save does not have every progression field needed for that choice.')
++        if selected is not None and any((e := self.slot.get(flag)) is not None and (not e.editable or e.type != 'Bool')
++                                        for flag in cat.got_flags(selected)):
++            raise ValueError('This save has an unsupported acquisition field for that choice.')
++        if q.get('group') == 'ocarina':
++            equipped = self.slot.get('PlayerStatus.EquipOcarina')
++            if equipped is None or not equipped.editable or equipped.type != 'String64':
++                raise ValueError('This save does not have an editable ocarina equipment field.')
++        for item in items:
++            if item != selected and any(self.val(e) == item for e in cat.EQUIPPED):
++                raise ValueError('Equip another item in the game before changing this progression.')
++        for item in items:
++            if item == selected:
++                self.give(item)
++            else:
++                self.take(item, False)
++        if q.get('group') == 'ocarina':
++            self.put('PlayerStatus.EquipOcarina', selected or '')
++        return self.r_items(q)
++
+     # -- progress flags and every entry
+     def r_flags(self, q):
+         self.need_slot()
+@@ -564,17 +635,21 @@ class Editor:
+     # -- writing
+     def r_save(self, q):
+         self.need_slot()
++        for kind, sf in self.slot.files.items():
++            if hashlib.sha256(sf.path.read_bytes()).digest() != self.slot.original[kind]:
++                raise ValueError('The save changed on disk since it was opened. Reopen it before saving.')
+         backups = self.game / 'save-backups'
+-        stamp = time.strftime('%Y-%m-%d %H%M%S')
+-        n = 0
+-        for sf in self.slot.files.values():
+-            if sf.dirty:
+-                dst = backups / stamp / sf.path.parent.name / sf.path.name
+-                dst.parent.mkdir(parents=True, exist_ok=True)
+-                dst.write_bytes(sf.path.read_bytes())
+-                sf.save()
+-                n += 1
+-        return {'written': n, 'backup': str(backups / stamp) if n else '', 'edited': 0}
++        stamp = time.strftime('%Y-%m-%d %H%M%S') + '-' + uuid.uuid4().hex[:8]
++        changed = [(kind, sf) for kind, sf in self.slot.files.items() if sf.dirty]
++        # Complete every backup before replacing any save file.
++        for _kind, sf in changed:
++            dst = backups / stamp / sf.path.parent.name / sf.path.name
++            dst.parent.mkdir(parents=True, exist_ok=True)
++            dst.write_bytes(sf.path.read_bytes())
++        for kind, sf in changed:
++            sf.save()
++            self.slot.original[kind] = hashlib.sha256(sf.path.read_bytes()).digest()
++        return {'written': len(changed), 'backup': str(backups / stamp) if changed else '', 'edited': 0}
+ 
+     def r_revert(self, q):
+         self.need_slot()
+diff --git a/nx2/walk.py b/nx2/walk.py
+index 2ee3194a..eb010089 100644
+--- a/nx2/walk.py
++++ b/nx2/walk.py
+@@ -15,7 +15,7 @@ install() is run by nx2/lift.py at its module level.
+ """
+ import a64_lift
+ 
+-KIT_TREE = "62e2b3b6441109ccfce200785d57c114292887e5184c12f8c604893cf4dbd0a4"   # (a64-kit's tree-sha256 the kit's walk was compared at)
++KIT_TREE = "a9f65e695d570892e9f58ec8b98a270a9e0639c5e5f9b808b9e75732facb37c6"   # (a64-kit's tree-sha256 the kit's walk was compared at)
+ 
+ _installed = False
+ 
+diff --git a/scripts/hookshot_ctl.py b/scripts/hookshot_ctl.py
+index b7c8edcf..90273b68 100644
+--- a/scripts/hookshot_ctl.py
++++ b/scripts/hookshot_ctl.py
+@@ -1299,7 +1299,7 @@ def supervise(folder):
+ 
+ @session_call
+ def start_session(game_dir, *, run=None, root=None, exe=None, image=None, romfs=None, user=None, cwd=None, data=None,
+-                  save=None, slot=None, profile="default", headless=False, sock=None, env=None, ready="bridge",
++                  save=None, slot=None, profile="default", headless=False, visible=False, sock=None, env=None, ready="bridge",
+                   timeout=600, wrapper=None, repo_save=None, repo=None):
+     """Start a durable supervisor, optionally through an admission wrapper (argv, never a shell command)"""
+     game = os.path.abspath(game_dir)
+@@ -1314,6 +1314,8 @@ def start_session(game_dir, *, run=None, root=None, exe=None, image=None, romfs=
+         raise Failed("--repo goes with --repo-save", 2)
+     if profile not in ("default", "test") or ready not in ("bridge", "present", "play"):
+         raise Failed("unknown profile or ready level", 2)
++    if visible and (profile != "test" or headless):
++        raise Failed("--visible requires the test profile and cannot be combined with --headless", 2)
+     if not math.isfinite(timeout) or timeout <= 0:
+         raise Failed("launch timeout must be positive seconds", 2)
+     if profile == "test" and (user or data):
+@@ -1374,7 +1376,8 @@ def start_session(game_dir, *, run=None, root=None, exe=None, image=None, romfs=
+     if profile == "test":
+         empty = folder / "empty-env.txt"
+         empty.touch()
+-        changes.update(HOS_HEADLESS="1", HOS_AUDIO="0", HOS_ENV_FILE=str(empty))
++        changes.update(HOS_HEADLESS="0" if visible else "1", HOS_AUDIO="0", HOS_ENV_FILE=str(empty),
++                       HOS_SAVE_BACKUP="0", HOS_SAVE_RESTORE="0")
+     command = [executable]
+     if image:
+         command.append(os.path.abspath(image))
+@@ -1439,6 +1442,7 @@ def launch(a):
+         changes[k] = v
+     session = start_session(a.game_dir, run=a.run, root=a.root, exe=a.exe, image=a.image, romfs=a.romfs, user=a.user,
+                             cwd=a.cwd, data=a.data, save=a.save, slot=a.slot, profile=a.profile, headless=a.headless,
++                            visible=a.visible,
+                             sock=a.sock, env=changes, ready=a.ready, timeout=a.timeout,
+                             wrapper=json.loads(a.wrapper) if a.wrapper else None, repo_save=a.repo_save, repo=a.repo)
+     info = session.info()
+@@ -1489,6 +1493,7 @@ def main(argv=None):
+     q.add_argument("--cwd", help="working/cache folder; needs --image")
+     q.add_argument("--wrapper", help="JSON argv prefix around the lifetime supervisor, for admission")
+     q.add_argument("--headless", action="store_true")
++    q.add_argument("--visible", action="store_true", help="show the isolated test profile's game window")
+     q.add_argument("--env", action="append", default=[], metavar="NAME=VALUE")
+     q.add_argument("--timeout", type=float, default=600, help="seconds to wait for the bridge (shaders may be prepared first)")
+     sub.add_parser("status")
+diff --git a/scripts/linux/appimage.sh b/scripts/linux/appimage.sh
+index 1d8ddfec..93ca7235 100755
+--- a/scripts/linux/appimage.sh
++++ b/scripts/linux/appimage.sh
+@@ -5,6 +5,8 @@
+ #   scripts/linux/deps.sh        (first: the compiler, Python, FFmpeg, SDL2, headers into build-linux/deps)
+ #   scripts/linux/appimage.sh    -> build-linux/Hookshot-<version>-x86_64.AppImage and its .zsync
+ # The same image builds the game and, with --play, starts the one it saved.
++# HOOKSHOT_ADVENTURE_PUBLISH and HOOKSHOT_ADVENTURE_NOTICES optionally add a
++# self-contained Adventure launcher and its notices; --builtin keeps the stock Builder.
+ #
+ # Built on the oldest system it is for (CI: Ubuntu 22.04): the sysroot it carries is that system's C library, so the
+ # game it builds runs on glibc 2.35 and newer. work/ (hot_funcs.txt, hot_order.txt, hookshot_pieces.prof,
+@@ -24,6 +26,35 @@ APPDIR=$B/AppDir
+ VERSION=${HOOKSHOT_VERSION:-$(git describe --tags --long --always --match "v[0-9]*" 2>/dev/null || echo dev)}
+ export EMSDK=$DEPS/emsdk RX_CPM=$DEPS/cpm
+ PY=$DEPS/python/bin/python3
++if [ -n "${HOOKSHOT_ADVENTURE_PUBLISH:-}" ]; then
++    A=$HOOKSHOT_ADVENTURE_PUBLISH
++    N=${HOOKSHOT_ADVENTURE_NOTICES:-}
++    [ -x "$A/HookshotAdventure.App" ] && [ -f "$A/libcoreclr.so" ] && [ -f "$A/libhostfxr.so" ] || {
++        echo "HOOKSHOT_ADVENTURE_PUBLISH must be a self-contained Linux Adventure publish" >&2; exit 1;
++    }
++    [ -n "$N" ] && [ -d "$N" ] && [ -n "$(ls -A "$N")" ] || {
++        echo "HOOKSHOT_ADVENTURE_NOTICES must point to the launcher's third-party notices" >&2; exit 1;
++    }
++    # The stock update manifests would replace this fork's sources with upstream
++    # Hookshot on the next update, silently removing the Adventure changes.
++    case "${HOOKSHOT_REPOSITORY:-}" in
++        ""|Hookshot/Hookshot) echo "Set HOOKSHOT_REPOSITORY to this fork's release repository before packaging Adventure" >&2; exit 1;;
++    esac
++    [[ "$HOOKSHOT_REPOSITORY" =~ ^[A-Za-z0-9_][A-Za-z0-9._-]*/[A-Za-z0-9_][A-Za-z0-9._-]*$ ]] || {
++        echo "HOOKSHOT_REPOSITORY must be an owner/repository name" >&2; exit 1;
++    }
++    [ -n "${HOOKSHOT_ADVENTURE_ASTCENC:-}" ] && [ -x "$HOOKSHOT_ADVENTURE_ASTCENC" ] && [ -f "$HOOKSHOT_ADVENTURE_ASTCENC" ] || {
++        echo "HOOKSHOT_ADVENTURE_ASTCENC must name a Linux astcenc-sse2 executable built for the release baseline" >&2; exit 1;
++    }
++    [ -n "${HOOKSHOT_ADVENTURE_ASTC_LICENSE:-}" ] && [ -s "$HOOKSHOT_ADVENTURE_ASTC_LICENSE" ] || {
++        echo "HOOKSHOT_ADVENTURE_ASTC_LICENSE must name the codec's license file" >&2; exit 1;
++    }
++    # Run it on the release baseline before changing staging; an executable
++    # built against a newer host libc will fail inside the Ubuntu container.
++    "$HOOKSHOT_ADVENTURE_ASTCENC" -help >/dev/null 2>&1 || {
++        echo "The supplied astcenc does not run on this build system" >&2; exit 1;
++    }
++fi
+ 
+ # ---- the tools' native helpers, built now: the AppImage is read-only. a64emit with its C++ runtime inside (the one this system
+ # builds with is newer than older systems have), and the stamp build_emit.py checks, so it is not built again ----
+@@ -45,6 +76,17 @@ printf '%s
+ ' "$VERSION" > "$T/VERSION"   # (no git history in here: nx2/version.py reads the release name from it)
+ mkdir -p "$T/builder" "$T/gpu/render" "$T/gpu/vk" "$T/third_party"
+ cp -a builder/linux "$T/builder/"
++# The Adventure alpha is optional. Supply a self-contained linux-x64 publish and
++# its third-party notices; the stock Builder and every existing tool stay in the image.
++if [ -n "${HOOKSHOT_ADVENTURE_PUBLISH:-}" ]; then
++    mkdir -p "$T/builder/Adventure/app" "$T/licenses/adventure"
++    cp -a "$A/." "$T/builder/Adventure/app/"
++    cp -a "$N/." "$T/licenses/adventure/"
++    cp -L "$HOOKSHOT_ADVENTURE_ASTCENC" "$T/builder/Adventure/app/astcenc-sse2"
++    chmod 755 "$T/builder/Adventure/app/astcenc-sse2"
++    cp -L "$HOOKSHOT_ADVENTURE_ASTC_LICENSE" "$T/licenses/adventure/astcenc-LICENSE.txt"
++    printf '%s\n' "$HOOKSHOT_REPOSITORY" > "$T/UPDATE_REPOSITORY"
++fi
+ cp -a gpu/render/*.h "$T/gpu/render/"
+ # (every gpu/vk header the host's sources include: v2.0.6 shipped without oot_cheat_items.h and no Linux build finished, issue 990.
+ # tests/test_appimage_headers.py checks that this covers what host/ includes)
+@@ -103,7 +145,10 @@ for d in "$DEPS"/cpm/*/*; do
+     mkdir -p "$T/cpm/${d#"$DEPS/cpm/"}"
+     cp -a "$d/include" "$T/cpm/${d#"$DEPS/cpm/"}/"
+ done
+-cp -a "$DEPS/licenses" "$T/licenses"   # (LLVM, FFmpeg, dav1d, SDL2: what this AppImage carries besides Hookshot)
++# The Adventure or RenHDrum notices may already have created licenses/.
++# Merge the dependency notices into that directory instead of nesting licenses/licenses/.
++mkdir -p "$T/licenses"
++cp -a "$DEPS/licenses/." "$T/licenses/"   # (LLVM, FFmpeg, dav1d, SDL2: what this AppImage carries besides Hookshot)
+ # ---- the licences of the third-party parts compiled into hookshot_vk.so (tests/test_appimage_licenses.py) ----
+ mkdir -p "$T/licenses/imgui" "$T/licenses/zstd" "$T/licenses/libertinus" "$T/licenses/fidelityfx" "$T/licenses/fidelityfx-sdk"
+ cp third_party/imgui/LICENSE.txt third_party/imgui/PROVENANCE.md "$T/licenses/imgui/"
+diff --git a/scripts/linux/docker.sh b/scripts/linux/docker.sh
+index 12e9a5be..1d7f17ea 100755
+--- a/scripts/linux/docker.sh
++++ b/scripts/linux/docker.sh
+@@ -8,12 +8,42 @@
+ #
+ # The checkout is mounted at /src and the build runs as your user, so build-linux/ belongs to you. The deps are kept
+ # between runs in build-linux/docker-deps and build-linux/docker-vk-work, apart from a host build's deps and vk-work. DOCKER=podman uses Podman. GH_TOKEN, JOBS, HOOKSHOT_JOBS and HOOKSHOT_VERSION are passed
+-# through when set.
++# through when set. HOOKSHOT_ADVENTURE_PUBLISH and HOOKSHOT_ADVENTURE_NOTICES
++# are mounted read-only when supplied, including when they are outside the checkout.
+ set -euo pipefail
+ cd "$(dirname "$0")/../.."
+ DOCKER=${DOCKER:-docker}
+ IMAGE=${HOOKSHOT_IMAGE:-hookshot-linux-build}
+ 
++# Resolve the optional launcher inputs before building the container image. The
++# host paths are not meaningful inside /src, so give each a fixed read-only mount.
++ADVENTURE_MOUNTS=()
++if [ -n "${HOOKSHOT_ADVENTURE_PUBLISH:-}" ] || [ -n "${HOOKSHOT_ADVENTURE_NOTICES:-}" ]; then
++    for v in HOOKSHOT_ADVENTURE_PUBLISH HOOKSHOT_ADVENTURE_NOTICES; do
++        path=${!v:-}
++        [ -n "$path" ] && [ -d "$path" ] || { echo "$v must name an existing directory" >&2; exit 1; }
++        path=$(cd "$path" && pwd -P)
++        case "$path" in *:*) echo "$v cannot contain a colon in a container mount path" >&2; exit 1;; esac
++        if [ "$v" = HOOKSHOT_ADVENTURE_PUBLISH ]; then
++            ADVENTURE_MOUNTS+=(-v "$path:/opt/hookshot-adventure/publish:ro" -e HOOKSHOT_ADVENTURE_PUBLISH=/opt/hookshot-adventure/publish)
++        else
++            ADVENTURE_MOUNTS+=(-v "$path:/opt/hookshot-adventure/notices:ro" -e HOOKSHOT_ADVENTURE_NOTICES=/opt/hookshot-adventure/notices)
++        fi
++    done
++    for v in HOOKSHOT_ADVENTURE_ASTCENC HOOKSHOT_ADVENTURE_ASTC_LICENSE; do
++        path=${!v:-}
++        [ -n "$path" ] && [ -f "$path" ] || { echo "$v must name an existing file" >&2; exit 1; }
++        path=$(realpath "$path")
++        case "$path" in *:*) echo "$v cannot contain a colon in a container mount path" >&2; exit 1;; esac
++        if [ "$v" = HOOKSHOT_ADVENTURE_ASTCENC ]; then
++            [ -x "$path" ] || { echo "$v must be executable" >&2; exit 1; }
++            ADVENTURE_MOUNTS+=(-v "$path:/opt/hookshot-adventure/astcenc-sse2:ro" -e HOOKSHOT_ADVENTURE_ASTCENC=/opt/hookshot-adventure/astcenc-sse2)
++        else
++            ADVENTURE_MOUNTS+=(-v "$path:/opt/hookshot-adventure/astcenc-LICENSE.txt:ro" -e HOOKSHOT_ADVENTURE_ASTC_LICENSE=/opt/hookshot-adventure/astcenc-LICENSE.txt)
++        fi
++    done
++fi
++
+ "$DOCKER" build -t "$IMAGE" -f scripts/linux/Dockerfile scripts/linux
+ 
+ case "${1:-}" in
+@@ -46,7 +76,8 @@ fi
+ # build's need the host's glibc and libstdc++ (__isoc23_strtol, std::format). Mounted over it, as appimage.sh names it.
+ mkdir -p build-linux/docker-deps build-linux/docker-vk-work
+ RUN+=(-e DEPS=/src/build-linux/docker-deps -v "$PWD/build-linux/docker-vk-work:/src/build-linux/vk-work")
+-for v in GH_TOKEN JOBS HOOKSHOT_JOBS HOOKSHOT_VERSION; do
++RUN+=("${ADVENTURE_MOUNTS[@]}")
++for v in GH_TOKEN JOBS HOOKSHOT_JOBS HOOKSHOT_VERSION HOOKSHOT_REPOSITORY HOOKSHOT_UPDATE_RELEASE HOOKSHOT_UPDATE_INFO; do
+     [ -n "${!v:-}" ] && RUN+=(-e "$v")
+ done
+ 
+diff --git a/tests/test_amd_subgroup_profiles.py b/tests/test_amd_subgroup_profiles.py
+index 8292108b..0a4efc4a 100644
+--- a/tests/test_amd_subgroup_profiles.py
++++ b/tests/test_amd_subgroup_profiles.py
+@@ -50,6 +50,7 @@ struct {
+     // which tests/test_device_policy.py holds device_policy() to)
+     struct { bool warp64 = false, frag_shuffle_fallback = false, gather_offset = false; } policy;
+ } dev;
++bool float16_shaders() { return true; }
+ 
+ using Shader::Stage;
+ using Id = uint32_t;
+diff --git a/tests/test_appimage_licenses.py b/tests/test_appimage_licenses.py
+index a94723bd..3af8f344 100644
+--- a/tests/test_appimage_licenses.py
++++ b/tests/test_appimage_licenses.py
+@@ -42,9 +42,9 @@ class AppImageLicences(unittest.TestCase):
+                 self.assertEqual((Path(folder) / shipped).read_bytes(), (ROOT / source).read_bytes(), shipped)
+ 
+     def test_block_after_the_deps_licences(self):
+-        # (cp -a of the deps' licences into an existing folder would nest it: this block must come after)
++        # (the deps' licence contents are merged before the renderer's licences)
+         script = (ROOT / "scripts/linux/appimage.sh").read_text(encoding="utf-8")
+-        self.assertLess(script.index('cp -a "$DEPS/licenses" "$T/licenses"'),
++        self.assertLess(script.index('cp -a "$DEPS/licenses/." "$T/licenses/"'),
+                         script.index("# ---- the licences of the third-party parts compiled into hookshot_vk.so"))
+ 
+     def test_vk_third_party_covered(self):
+diff --git a/tests/test_appimage_scripts.py b/tests/test_appimage_scripts.py
+index 7adea155..8cb79f1e 100644
+--- a/tests/test_appimage_scripts.py
++++ b/tests/test_appimage_scripts.py
+@@ -9,6 +9,7 @@ failed with FileNotFoundError on scripts/ngx_sdk.py.
+     python -I -B tests/test_appimage_scripts.py
+ """
+ import os
++import shutil
+ import subprocess
+ import sys
+ import tempfile
+@@ -31,12 +32,144 @@ class AppImageScripts(unittest.TestCase):
+         end = script.index("cp -a third_party/opus", start)
+         with tempfile.TemporaryDirectory(prefix="hookshot-appimage-scripts-") as folder:
+             env = dict(os.environ, T=folder, VERSION="authored-test")
++            env.pop("HOOKSHOT_ADVENTURE_PUBLISH", None)
+             result = subprocess.run(["bash", "-eu", "-o", "pipefail", "-c", script[start:end]], cwd=ROOT, env=env,
+                                     capture_output=True, text=True)
+             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+             for shipped, source in WANT.items():
+                 self.assertEqual((Path(folder) / shipped).read_bytes(), (ROOT / source).read_bytes(), shipped)
+ 
++    @unittest.skipUnless(sys.platform.startswith("linux"), "the AppImage is made on Linux")
++    def test_optional_adventure_copy_keeps_builder_and_notices(self):
++        script = (ROOT / "scripts/linux/appimage.sh").read_text(encoding="utf-8")
++        start = script.index("# ---- the tools (the sources")
++        end = script.index("cp -a third_party/opus", start)
++        with tempfile.TemporaryDirectory(prefix="hookshot-adventure-copy-") as folder:
++            root = Path(folder)
++            publish, notices, dest = (root / name for name in ("publish", "notices", "image"))
++            for path in (publish, notices, dest):
++                path.mkdir()
++            (publish / "HookshotAdventure.App").write_bytes(b"authored application")
++            (notices / "license.txt").write_bytes(b"authored notice")
++            codec, license = root / "astcenc", root / "astc-license"
++            codec.write_bytes(b"authored codec")
++            codec.chmod(0o755)
++            license.write_text("authored codec license", encoding="utf-8")
++            env = dict(os.environ, T=str(dest), VERSION="authored-test", HOOKSHOT_ADVENTURE_PUBLISH=str(publish),
++                       A=str(publish), N=str(notices), HOOKSHOT_REPOSITORY="example/Adventure",
++                       HOOKSHOT_ADVENTURE_ASTCENC=str(codec), HOOKSHOT_ADVENTURE_ASTC_LICENSE=str(license))
++            result = subprocess.run(["bash", "-eu", "-o", "pipefail", "-c", script[start:end]], cwd=ROOT, env=env,
++                                    capture_output=True, text=True)
++            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
++            self.assertEqual((dest / "builder/Adventure/app/HookshotAdventure.App").read_bytes(), b"authored application")
++            self.assertEqual((dest / "licenses/adventure/license.txt").read_bytes(), b"authored notice")
++            self.assertEqual((dest / "UPDATE_REPOSITORY").read_text().strip(), "example/Adventure")
++            self.assertEqual((dest / "builder/Adventure/app/astcenc-sse2").read_bytes(), b"authored codec")
++            self.assertEqual((dest / "licenses/adventure/astcenc-LICENSE.txt").read_text(), "authored codec license")
++            self.assertTrue((dest / "builder/linux/hookshot_builder.py").is_file())
++
++    @unittest.skipUnless(sys.platform.startswith("linux"), "the AppImage is made on Linux")
++    def test_dependency_notices_merge_with_adventure_notices(self):
++        script = (ROOT / "scripts/linux/appimage.sh").read_text(encoding="utf-8")
++        start = script.index("# The Adventure or RenHDrum notices may already")
++        end = script.index("# ---- the licences", start)
++        with tempfile.TemporaryDirectory(prefix="hookshot-appimage-notices-") as folder:
++            root = Path(folder)
++            deps, target = root / "deps", root / "target"
++            (deps / "licenses/llvm").mkdir(parents=True)
++            (deps / "licenses/llvm/LICENSE").write_text("llvm", encoding="utf-8")
++            (target / "licenses/adventure").mkdir(parents=True)
++            (target / "licenses/adventure/LICENSE").write_text("adventure", encoding="utf-8")
++            result = subprocess.run(["bash", "-eu", "-o", "pipefail", "-c", script[start:end]],
++                                    env=dict(os.environ, DEPS=str(deps), T=str(target)), capture_output=True, text=True)
++            self.assertEqual(result.returncode, 0, result.stderr)
++            self.assertEqual((target / "licenses/llvm/LICENSE").read_text(), "llvm")
++            self.assertEqual((target / "licenses/adventure/LICENSE").read_text(), "adventure")
++            self.assertFalse((target / "licenses/licenses").exists())
++
++    @unittest.skipUnless(sys.platform.startswith("linux"), "the AppImage is made on Linux")
++    def test_invalid_adventure_inputs_do_not_clear_staging(self):
++        with tempfile.TemporaryDirectory(prefix="hookshot-adventure-invalid-") as folder:
++            root = Path(folder)
++            script = root / "scripts/linux/appimage.sh"
++            script.parent.mkdir(parents=True)
++            shutil.copy(ROOT / "scripts/linux/appimage.sh", script)
++            sentinel = root / "build-linux/AppDir/keep.txt"
++            sentinel.parent.mkdir(parents=True)
++            sentinel.write_text("keep", encoding="utf-8")
++            env = dict(os.environ, HOOKSHOT_ADVENTURE_PUBLISH=str(root / "missing"), HOOKSHOT_VERSION="authored-test")
++            result = subprocess.run(["bash", str(script)], cwd=root, env=env, capture_output=True, text=True)
++            self.assertNotEqual(result.returncode, 0)
++            self.assertIn("self-contained Linux Adventure publish", result.stderr)
++            self.assertEqual(sentinel.read_text(encoding="utf-8"), "keep")
++            publish = root / "publish"
++            publish.mkdir()
++            for name in ("HookshotAdventure.App", "libcoreclr.so", "libhostfxr.so"):
++                (publish / name).write_bytes(b"authored fixture")
++            (publish / "HookshotAdventure.App").chmod(0o755)
++            env["HOOKSHOT_ADVENTURE_PUBLISH"] = str(publish)
++            env["HOOKSHOT_ADVENTURE_NOTICES"] = str(root / "missing-notices")
++            result = subprocess.run(["bash", str(script)], cwd=root, env=env, capture_output=True, text=True)
++            self.assertNotEqual(result.returncode, 0)
++            self.assertIn("third-party notices", result.stderr)
++            self.assertEqual(sentinel.read_text(encoding="utf-8"), "keep")
++            notices = root / "notices"
++            notices.mkdir()
++            (notices / "license.txt").write_text("authored fixture", encoding="utf-8")
++            env["HOOKSHOT_ADVENTURE_NOTICES"] = str(notices)
++            for repository in ("", "Hookshot/Hookshot"):
++                env["HOOKSHOT_REPOSITORY"] = repository
++                result = subprocess.run(["bash", str(script)], cwd=root, env=env, capture_output=True, text=True)
++                self.assertNotEqual(result.returncode, 0)
++                self.assertIn("fork's release repository", result.stderr)
++                self.assertEqual(sentinel.read_text(encoding="utf-8"), "keep")
++            env["HOOKSHOT_REPOSITORY"] = "../unsafe"
++            result = subprocess.run(["bash", str(script)], cwd=root, env=env, capture_output=True, text=True)
++            self.assertNotEqual(result.returncode, 0)
++            self.assertIn("owner/repository name", result.stderr)
++            self.assertEqual(sentinel.read_text(encoding="utf-8"), "keep")
++            env["HOOKSHOT_REPOSITORY"] = "example/Adventure"
++            env.pop("HOOKSHOT_ADVENTURE_ASTCENC", None)
++            result = subprocess.run(["bash", str(script)], cwd=root, env=env, capture_output=True, text=True)
++            self.assertNotEqual(result.returncode, 0)
++            self.assertIn("HOOKSHOT_ADVENTURE_ASTCENC", result.stderr)
++            self.assertEqual(sentinel.read_text(encoding="utf-8"), "keep")
++            codec = root / "codec"
++            codec.write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
++            codec.chmod(0o755)
++            env["HOOKSHOT_ADVENTURE_ASTCENC"] = str(codec)
++            env["HOOKSHOT_ADVENTURE_ASTC_LICENSE"] = str(notices / "license.txt")
++            result = subprocess.run(["bash", str(script)], cwd=root, env=env, capture_output=True, text=True)
++            self.assertNotEqual(result.returncode, 0)
++            self.assertIn("does not run on this build system", result.stderr)
++            self.assertEqual(sentinel.read_text(encoding="utf-8"), "keep")
++
++    @unittest.skipUnless(sys.platform.startswith("linux"), "the AppImage runs on Linux")
++    def test_adventure_dispatch_preserves_stock_commands(self):
++        with tempfile.TemporaryDirectory(prefix="hookshot-appimage-entry-") as folder:
++            appdir = Path(folder)
++            shutil.copy(ROOT / "builder/linux/AppRun", appdir / "AppRun")
++            app = appdir / "usr/share/hookshot/builder/Adventure/app/HookshotAdventure.App"
++            python = appdir / "usr/python/bin/python3"
++            play = appdir / "usr/share/hookshot/builder/linux/hookshot-launch"
++            for path, marker in ((app, "adventure"), (python, "stock"), (play, "play")):
++                path.parent.mkdir(parents=True, exist_ok=True)
++                path.write_text("#!/bin/sh\nprintf '%s\\n' '" + marker + "' \"$@\"\n", encoding="utf-8")
++                path.chmod(0o755)
++            def run(*args):
++                return subprocess.run([str(appdir / "AppRun"), *args], capture_output=True, text=True, check=True).stdout.splitlines()
++            self.assertEqual(run(), ["adventure"])
++            self.assertEqual(run("--adventure", "test"), ["adventure", "test"])
++            self.assertEqual(run("--builtin")[0], "stock")
++            self.assertEqual(run("--cli", "--help")[0], "stock")
++            self.assertEqual(run("--play")[0], "play")
++            self.assertEqual(run("--update", "game")[0], "stock")
++            app.unlink()
++            self.assertEqual(run()[0], "stock")
++            absent = subprocess.run([str(appdir / "AppRun"), "--adventure"], capture_output=True, text=True)
++            self.assertNotEqual(absent.returncode, 0)
++            self.assertIn("does not include Adventure", absent.stderr)
++
+ 
+ if __name__ == "__main__":
+     unittest.main()
+diff --git a/tests/test_audio_output_devices.py b/tests/test_audio_output_devices.py
+index 76189114..558126c9 100644
+--- a/tests/test_audio_output_devices.py
++++ b/tests/test_audio_output_devices.py
+@@ -61,15 +61,15 @@ def check_host_callbacks(api, backend):
+                 'mic_test': 'hos_mic_test', 'main_thread_times': 'host_main_thread_times',
+                 'out_of_memory': 'host_out_of_memory',
+                 'monitor_count': 'hos_monitor_count', 'monitor_info': 'hos_monitor_info',
+-                'monitor_select': 'hos_monitor_select'}
++                'monitor_select': 'hos_monitor_select', 'ab_frame': 'hos_ab_frame'}
+     assert len(fields) == len(table), 'Host interface/initializer lengths differ'
+     # (the end of the table: playback, the microphone test (28), the frame trace's main_thread_times (29), the renderer's
+     # out_of_memory (30), the fullscreen monitor's three (31), the rumble test (33) and the NFC tab's seven (34); take_text
+-    # and options_path come earlier, the mods' and cheats' callbacks between them and playback)
++    # and options_path come earlier, the mods' and cheats' callbacks between them and playback; version 35 appends ab_frame)
+     tail = ['audio_output_count', 'audio_output_info', 'audio_output_select', 'audio_output_state', 'mic_test',
+             'main_thread_times', 'out_of_memory', 'monitor_count', 'monitor_info', 'monitor_select', 'rumble_test',
+-            'nfc_count', 'nfc_name', 'nfc_tap', 'nfc_state', 'nfc_dir', 'nfc_scan', 'nfc_scan_name']
+-    assert fields[-len(tail):] == tail, 'Mic test must follow playback (29 appends main_thread_times, 30 out_of_memory, 31 the monitor callbacks, 33 the rumble test, 34 NFC)'
++            'nfc_count', 'nfc_name', 'nfc_tap', 'nfc_state', 'nfc_dir', 'nfc_scan', 'nfc_scan_name', 'ab_frame']
++    assert fields[-len(tail):] == tail, 'Playback, microphone, monitor, NFC and A/B callbacks must retain their ABI order'
+     assert fields.index('take_text') < fields.index('options_path') < fields.index('audio_output_count'), \
+         'take_text and options_path must come before playback'
+     for field, value in expected.items():
+diff --git a/tests/test_builder_form_scroll.py b/tests/test_builder_form_scroll.py
+index 9349db42..cd199367 100644
+--- a/tests/test_builder_form_scroll.py
++++ b/tests/test_builder_form_scroll.py
+@@ -41,9 +41,10 @@ class FormScrollTests(unittest.TestCase):
+         win.scale = 1.0
+         win.apply_theme()
+         win.cfg = {"out": out.name}
+-        for name in ("kind", "nup", "romfs", "exefs", "out", "language", "track", "status", "check_text", "space_text"):
++        for name in ("kind", "nup", "romfs", "exefs", "out", "language", "track", "version", "status", "check_text", "space_text"):
+             setattr(win, name, tk.StringVar(win, value="nup" if name == "kind" else out.name if name == "out" else ""))
+-        win.prepare, win.dlss = tk.BooleanVar(win), tk.BooleanVar(win)
++        win.prepare, win.dlss, win.fsr = tk.BooleanVar(win), tk.BooleanVar(win), tk.BooleanVar(win)
++        win.pinned = None
+         win.page = win.build_button = win.launch_folder = None
+         win.apply_mode = lambda: None
+         win.show_form()
+diff --git a/tests/test_env_on.py b/tests/test_env_on.py
+index cf58db21..3dd72007 100644
+--- a/tests/test_env_on.py
++++ b/tests/test_env_on.py
+@@ -141,7 +141,11 @@ def main():
+                "HOS_MKW_INTERVAL", "RX_NVN_WATCH_AFTER", "HOS_MUTEX_TRACE", "HOS_FPS_MAX", "HOS_AUDIO_CHANNELS",
+                "HOS_AUDIO_DEVICE", "HOS_CRASH_TEST", "HOS_LOG_BATCH_MS", "HOS_NVN_REC_SHIFT", "HOS_NVN_WATCH_DRAW",
+                "HOS_SDL_VERSION", "HOS_STATS_AFTER", "HOS_TEXT_SIZE", "HOS_THREAD_TIMES", "HOS_VIDEO_INPUT_LIMIT",
+-               "HOS_WIDE_UI_LOG", "HOS_PROFILE_EVERY", "HOS_SHADOW_BUCKET"}
++               "HOS_WIDE_UI_LOG", "HOS_PROFILE_EVERY", "HOS_SHADOW_BUCKET", "HOS_BG_CAP", "HOS_CYCLE_ITEMS",
++               "HOS_GUEST_PAGES_TEST_MB", "HOS_HEAP_SPLIT", "HOS_HEAP_SPLIT_COLD", "HOS_HOST_SPLIT", "HOS_JOB_ORDER_US",
++               "HOS_MEM_SPLIT", "HOS_MOUSE_TEST", "HOS_NAMES_NATIVE", "HOS_NR_DIFF_EVERY", "HOS_POOL_TRAP",
++               "HOS_POOL_TRAP_EVERY", "HOS_POOL_TRAP_REPORT", "HOS_PROCESS_PRIORITY", "HOS_VCORE_REPLAY_BOOST",
++               "HOS_WHEEL_HOLD_MS", "HOS_WHEEL_TAP_FRAMES", "HOS_ZSTD_NATIVE", "RX_VK_LEDGER"}
+     switch = r'"((?:RX|HOS|HOOKSHOT|EDEN|NVN)_[A-Z0-9_]+)"'
+     direct = re.compile(r"atoi\(getenv\(" + switch + r"\)\)")
+     taken = re.compile(r"\b(\w+)\s*=\s*getenv\(" + switch + r"\)")
+diff --git a/tests/test_fsr3fi_hud_layer.py b/tests/test_fsr3fi_hud_layer.py
+index ebd34ff8..f06476c5 100644
+--- a/tests/test_fsr3fi_hud_layer.py
++++ b/tests/test_fsr3fi_hud_layer.py
+@@ -101,6 +101,7 @@ static bool any(bvec3 v) { return v.r || v.g || v.b; }
+ static bvec3 greaterThan(vec3 a, vec3 b) { return {a.r > b.r, a.g > b.g, a.b > b.b}; }
+ static vec3 max(vec3 a, vec3 b) { return {a.r > b.r ? a.r : b.r, a.g > b.g ? a.g : b.g, a.b > b.b ? a.b : b.b}; }
+ using std::pow;
++using std::abs;
+ '''
+ 
+ FIXTURE = r'''
+diff --git a/tests/test_gpu_write_intervals.py b/tests/test_gpu_write_intervals.py
+index 3e8a745c..1626d8aa 100644
+--- a/tests/test_gpu_write_intervals.py
++++ b/tests/test_gpu_write_intervals.py
+@@ -31,6 +31,7 @@ DRIVER = r'''#define _CRT_SECURE_NO_WARNINGS 1
+ #include <map>
+ #include <mutex>
+ #include <utility>
++#include <vector>
+ static int fails;
+ #define CHECK(x) do { if (!(x)) { std::printf("FAIL line %d: %s\n", __LINE__, #x); fails++; } } while (0)
+ static void logf(const char*, ...) {}
+diff --git a/tests/test_hookshot_ctl.py b/tests/test_hookshot_ctl.py
+index ba254b54..c8a42201 100644
+--- a/tests/test_hookshot_ctl.py
++++ b/tests/test_hookshot_ctl.py
+@@ -326,6 +326,14 @@ class Sessions(unittest.TestCase):
+     def requests(self, command):
+         return [r for r in map(json.loads, (self.root / "requests.jsonl").read_text().splitlines()) if r["cmd"] == command]
+ 
++    def test_visible_test_profile_keeps_save_backups_isolated(self):
++        session = self.start(profile="test", visible=True,
++                             env={"HOS_HEADLESS": "1", "HOS_SAVE_BACKUP": "1", "HOS_SAVE_RESTORE": "1"})
++        env = session.info()["environment"]
++        self.assertEqual((env["HOS_HEADLESS"], env["HOS_AUDIO"]), ("0", "0"))
++        self.assertEqual((env["HOS_SAVE_BACKUP"], env["HOS_SAVE_RESTORE"]), ("0", "0"))
++        self.assertEqual(session.info()["user"], str(session.folder / "user"))
++
+     def test_profile_manifest_and_second_client(self):
+         os.environ["CTL_INHERITED_SECRET"] = "not recorded"
+         self.addCleanup(os.environ.pop, "CTL_INHERITED_SECRET", None)
+diff --git a/tests/test_host_exports.py b/tests/test_host_exports.py
+index b8701669..972a8a54 100644
+--- a/tests/test_host_exports.py
++++ b/tests/test_host_exports.py
+@@ -86,7 +86,7 @@ def main():
+     build = (ROOT / "nx2/build.py").read_text(encoding="utf-8")
+     link = build[build.index("exe = os.path.join(out, EXE)   # (+ hookshot.map"):]
+     link = link[:link.index("capture_output=True")]
+-    if '"-Wl,--export-dynamic-symbol=" + s for s in HOST_EXPORTS' not in link:
++    if 'linker(*("--export-dynamic-symbol=" + s for s in HOST_EXPORTS))' not in link:
+         raise SystemExit("the Linux exe's link does not export HOST_EXPORTS")
+     print("%d names looked up in the exe, all in HOST_EXPORTS" % len(names))
+     if os.name == "nt":
+@@ -97,7 +97,7 @@ def main():
+         print("skipped the link: no C compiler")
+         return
+     lld = ["-fuse-ld=lld"] if shutil.which("ld.lld") else []
+-    flags = ["-Wl,--export-dynamic-symbol=" + e for e in exports]
++    flags = [arg for e in exports for arg in ("-Xlinker", "--export-dynamic-symbol=" + e)]
+     defs = "\n".join('__attribute__((visibility("default"))) int %s(void) { return %d; }' % (n, i + 1)
+                      for i, n in enumerate(sorted(names)))
+     src = EXE.replace("DEFINITIONS", defs).replace("NAMES", ", ".join('"%s"' % n for n in sorted(names)))
+diff --git a/tests/test_linux_audio_output.py b/tests/test_linux_audio_output.py
+index 0cb2975e..b5060bf1 100644
+--- a/tests/test_linux_audio_output.py
++++ b/tests/test_linux_audio_output.py
+@@ -75,7 +75,7 @@ def main():
+         sdl = (args.source/'host/hos_sdl.c').read_text(encoding='utf-8')
+         sound = between(sdl, '/* ---- sound ---- */', '/* ---- (hookshot) microphones:')
+         posix = (args.source/'host/posix/win32_posix.c').read_text(encoding='utf-8')
+-        wave = posix[posix.index('/* ---- waveOut on SDL\'s audio'):]
++        wave = between(posix, '/* ---- waveOut on SDL\'s audio', '/* ---- (Hookshot) the performance overlay')
+         # The real files are separate translation units. Keep weak declarations before definitions in this combined fixture.
+         split = wave.index('typedef struct {')
+         sound = wave[:split] + sound
+@@ -85,7 +85,7 @@ def main():
+         wave = ('#if defined(__GNUC__) && !defined(__clang__)\n'
+                 '#pragma GCC diagnostic push\n#pragma GCC diagnostic ignored "-Waddress"\n#endif\n' + wave +
+                 '\n#if defined(__GNUC__) && !defined(__clang__)\n#pragma GCC diagnostic pop\n#endif\n')
+-        # waveOut is the final section; any later source addition must explicitly delimit this fixture.
++        # Stop before the unrelated POSIX performance-overlay calls.
+         fake = (ROOT/'tests/linux_audio_output_test.c').read_text(encoding='utf-8')
+         assert fake.count('/* PRODUCTION_SOUND */') == 1
+         assert fake.count('/* PRODUCTION_WAVE */') == 1
+diff --git a/tests/test_linux_preflight.py b/tests/test_linux_preflight.py
+index c0d46dd0..217ef655 100644
+--- a/tests/test_linux_preflight.py
++++ b/tests/test_linux_preflight.py
+@@ -12,6 +12,7 @@ import importlib.util
+ import io
+ import os
+ from pathlib import Path
++from types import SimpleNamespace
+ import shutil
+ import subprocess
+ import sys
+@@ -46,6 +47,7 @@ class LinuxPreflightTests(unittest.TestCase):
+         self.addCleanup(self.stack.close)
+         self.stack.enter_context(mock.patch.dict(os.environ, {}, clear=True))
+         self.stack.enter_context(mock.patch.dict(sys.modules))
++        sys.modules["exefs_patches"] = SimpleNamespace(collect=lambda exefs, out: [], ENV="OOT_EXEFS_PATCHES")
+         self.stack.enter_context(mock.patch.object(sys, "path", list(sys.path)))
+         # Import only production modules, without reading a developer's dump.txt or
+         # probing the actual system's pkg-config at import time.
+@@ -132,6 +134,13 @@ class LinuxPreflightTests(unittest.TestCase):
+             dest = Path(cmd[cmd.index("--extract") + 1])
+             (dest / "exefs").mkdir(parents=True)
+             (dest / "romfs").mkdir()
++            romfs = dest / "romfs"
++            (romfs / "Pack").mkdir()
++            (romfs / "Pack/ZsDic.pack.zs").write_bytes(b"\x28\xb5\x2f\xfd" + b"authored dictionary")
++            (romfs / "System/Resource").mkdir(parents=True)
++            (romfs / "System/Resource" / self.make.ROMFS_TABLE).write_bytes(b"\x28\xb5\x2f\xfd" + b"authored resource table")
++            (romfs / "System/HeapSize").mkdir(parents=True)
++            (romfs / "System/HeapSize/Product.Nin_Ounce_NVN2.HeapDef.byml.zs").write_bytes(b"\x28\xb5\x2f\xfd" + b"authored heap")
+             header = bytearray(0x60)
+             header[:4] = b"NSO0"
+             header[0x40:0x44] = bytes.fromhex(self.make.BUILD_ID)
+diff --git a/tests/test_linux_update.py b/tests/test_linux_update.py
+index ff84eca4..af6b5c20 100644
+--- a/tests/test_linux_update.py
++++ b/tests/test_linux_update.py
+@@ -61,6 +61,39 @@ def appdir(path):
+ 
+ 
+ class UpdateTests(unittest.TestCase):
++    def test_fork_update_retains_adventure_codec_and_repository(self):
++        from unittest import mock
++        with tempfile.TemporaryDirectory(prefix="hookshot-adventure-update-") as tmp:
++            root = Path(tmp)
++            source, out = root / "appdir", root / "parts"
++            appdir(source)
++            tools = source / "usr/share/hookshot"
++            app = tools / "builder/Adventure/app/HookshotAdventure.App"
++            app.parent.mkdir(parents=True)
++            app.write_text("#!/bin/sh\nprintf 'adventure\\n'\n", encoding="utf-8")
++            app.chmod(0o755)
++            codec = app.parent / "astcenc-sse2"
++            codec.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
++            codec.chmod(0o755)
++            (tools / "UPDATE_REPOSITORY").write_text("Example/Adventure\n", encoding="utf-8")
++            license = tools / "licenses/adventure/astcenc-LICENSE.txt"
++            license.parent.mkdir(parents=True)
++            license.write_text("authored license", encoding="utf-8")
++            base = "https://git.notrexed.dev/Example/Adventure/releases/download/linux-parts"
++            with mock.patch.object(sys, "argv", ["make_parts.py", str(source), "v2", str(out), "--base", base]):
++                make_parts.main()
++            manifest = linux_update.parse_list((out / linux_update.LIST_NAME).read_text(encoding="utf-8"))
++            self.assertTrue(all(part.url.startswith(base + "/") for part in manifest.parts))
++            payloads = {part.url: (out / part.url.rsplit("/", 1)[-1]).read_bytes() for part in manifest.parts}
++            with mock.patch.dict(os.environ, {"HOOKSHOT_BUILDER_HOME": str(root / "home")}):
++                installed_run = Path(linux_update.install(manifest, None, None, get=lambda url: payloads[url]))
++            installed = installed_run.parent / "usr/share/hookshot"
++            self.assertEqual((installed / "UPDATE_REPOSITORY").read_text().strip(), "Example/Adventure")
++            self.assertTrue(os.access(installed / "builder/Adventure/app/astcenc-sse2", os.X_OK))
++            self.assertEqual((installed / "licenses/adventure/astcenc-LICENSE.txt").read_text(), "authored license")
++            result = subprocess.run([str(installed_run)], capture_output=True, text=True, check=True)
++            self.assertEqual(result.stdout.strip(), "adventure")
++
+     def test_relative_links_and_final_list_stay_inside_the_staging_tree(self):
+         from unittest import mock
+         with tempfile.TemporaryDirectory(prefix="hookshot-link-bounds-") as tmp:
+diff --git a/tests/test_make_game_cache.py b/tests/test_make_game_cache.py
+index 4f763921..2714767b 100644
+--- a/tests/test_make_game_cache.py
++++ b/tests/test_make_game_cache.py
+@@ -53,6 +53,7 @@ def game_files(romfs, heapdef=HEAPDEF):
+     (romfs / "Pack").mkdir(parents=True, exist_ok=True)
+     (romfs / "Pack" / "ZsDic.pack.zs").write_bytes(b"\x28\xb5\x2f\xfd" + b"authored dictionary stand-in")
+     (romfs / "System" / "Resource").mkdir(parents=True, exist_ok=True)
++    (romfs / "System" / "Resource" / make_game.ROMFS_TABLE).write_bytes(b"\x28\xb5\x2f\xfd" + b"authored resource table")
+     if heapdef:
+         (romfs / heapdef).parent.mkdir(parents=True, exist_ok=True)
+         (romfs / heapdef).write_bytes(b"\x28\xb5\x2f\xfd" + b"authored heap definition stand-in")
+@@ -186,6 +187,7 @@ class NupCacheTests(unittest.TestCase):
+             stack.enter_context(mock.patch.object(make_game, "hot_list_for",
+                                                   partial(make_game.hot_list_for, root=make_game.ROOT)))
+             stack.enter_context(mock.patch.object(make_game, "lift_key", return_value="test key"))
++            stack.enter_context(mock.patch.dict(sys.modules, {"exefs_patches": SimpleNamespace(collect=lambda exefs, out: [], ENV="OOT_EXEFS_PATCHES")}))
+             if overlap:
+                 stack.enter_context(mock.patch.object(make_game, "overlap_package_read", return_value=True))
+             stack.enter_context(mock.patch.object(make_game, "run", side_effect=run))
+@@ -517,6 +519,7 @@ class NupCacheTests(unittest.TestCase):
+         (packed / "romfs.bin").write_bytes(b"authored packed stand-in")
+         empty.mkdir()
+         self.game_files(half)
++        (half / "System" / "Resource" / make_game.ROMFS_TABLE).unlink()
+         (half / "System" / "Resource").rmdir()
+         self.game_files(no_heap, heapdef=None)
+         for romfs, said, packed_copy in ((packed, "no Pack/ZsDic.pack.zs", True), (empty, "no Pack/ZsDic.pack.zs", False),
+@@ -617,6 +620,17 @@ class NupCacheTests(unittest.TestCase):
+ 
+ 
+ class RomfsCopyTests(unittest.TestCase):
++    def test_independent_copy_does_not_share_storage_with_source(self):
++        with tempfile.TemporaryDirectory(prefix="hookshot-independent-romfs-") as folder:
++            src, dst = Path(folder) / "source", Path(folder) / "destination"
++            src.mkdir()
++            source = src / "asset.bin"
++            source.write_bytes(b"original authored asset")
++            with contextlib.redirect_stdout(io.StringIO()):
++                make_game.link_or_copy(src, dst, copy_only=True)
++            (dst / "asset.bin").write_bytes(b"changed copy")
++            self.assertEqual(source.read_bytes(), b"original authored asset")
++
+     def test_interrupted_cross_volume_copy_can_be_retried(self):
+         with tempfile.TemporaryDirectory(prefix="hookshot-romfs-copy-") as folder:
+             src, dst = Path(folder) / "source", Path(folder) / "destination"
+diff --git a/tests/test_make_game_romfs_in_place.py b/tests/test_make_game_romfs_in_place.py
+index 50712747..7d2740a3 100644
+--- a/tests/test_make_game_romfs_in_place.py
++++ b/tests/test_make_game_romfs_in_place.py
+@@ -43,6 +43,13 @@ class RomfsInPlaceTests(unittest.TestCase):
+             self.parse("--nup", "game.nup", "--romfs-in-place")
+         self.assertIn("--romfs-in-place", out.getvalue())
+ 
++    def test_independent_copy_rejects_in_place_mode(self):
++        self.assertTrue(self.parse("--romfs", "r", "--exefs", "e", "--copy-romfs").copy_romfs)
++        for env in ({}, {"HOOKSHOT_ROMFS_IN_PLACE": "1"}):
++            with self.subTest(env=env), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
++                args = ("--romfs", "r", "--exefs", "e", "--copy-romfs")
++                self.parse(*args, *(('--romfs-in-place',) if not env else ()), env=env)
++
+     def test_the_read_stage_links_only_without_it(self):
+         """main's folder branch: the link (a copy where it is refused) is made only when the romfs is not read in place, and the
+         romfs the rest of the build reads (OOT_ROMFS, the shader list, the texts) is then the given folder"""
+@@ -50,7 +57,7 @@ class RomfsInPlaceTests(unittest.TestCase):
+         branch = src[src.index("in_place = bool(getattr(a, \"romfs_in_place\", False))"):]
+         branch = branch[:branch.index("shutil.rmtree(kept, ignore_errors=True)")]   # (hookshot: the link after the build check)
+         self.assertIn("romfs = os.path.abspath(a.romfs)", branch)
+-        self.assertIn("if not in_place:\n            link_or_copy(a.romfs, romfs)", branch)
++        self.assertIn('if not in_place:\n            link_or_copy(a.romfs, romfs, copy_only=getattr(a, "copy_romfs", False))', branch)
+ 
+ 
+ if __name__ == "__main__":
+diff --git a/tests/test_missing_nup.py b/tests/test_missing_nup.py
+index b00f95d9..9b4c2f34 100644
+--- a/tests/test_missing_nup.py
++++ b/tests/test_missing_nup.py
+@@ -31,6 +31,12 @@ class MissingNupTests(unittest.TestCase):
+         self.out, self.work = self.root / "output", self.root / "work"
+         (self.out / "romfs").mkdir(parents=True)
+         (self.out / "romfs/asset").write_bytes(b"authored asset")
++        (self.out / "romfs/Pack").mkdir()
++        (self.out / "romfs/Pack/ZsDic.pack.zs").write_bytes(b"\x28\xb5\x2f\xfd" + b"authored dictionary")
++        (self.out / "romfs/System/Resource").mkdir(parents=True)
++        (self.out / "romfs/System/Resource" / make_game.ROMFS_TABLE).write_bytes(b"authored resource table")
++        (self.out / "romfs/System/HeapSize").mkdir(parents=True)
++        (self.out / "romfs/System/HeapSize/Product.Nin_Ounce_NVN2.HeapDef.byml.zs").write_bytes(b"\x28\xb5\x2f\xfd" + b"authored heap")
+         (self.out / ".hookshot_exefs").mkdir()
+         (self.out / ".hookshot_exefs/main").write_bytes(b"authored code sentinel")
+         (self.out / "user/save").mkdir(parents=True)
+diff --git a/tests/test_mods_size_table.py b/tests/test_mods_size_table.py
+index 1cbd0c7a..a5405a06 100644
+--- a/tests/test_mods_size_table.py
++++ b/tests/test_mods_size_table.py
+@@ -443,7 +443,7 @@ int main(int argc, char **argv) {
+         served, content, log = case("level19", {"seed": {TABLE: zstandard.ZstdCompressor(level=19).compress(MOD_B)}})
+         check(content == merged(MOD_B, OURS), "a compressed mod table: %s" % served)
+         sizeless = zstandard.ZstdCompressor(level=3, write_content_size=False).compress(MOD_B)
+-        served, _, log = case("sizeless", {"seed": {TABLE: sizeless}})
++        served, _, log = case("sizeless", {"seed": {TABLE: sizeless}}, romfs=True)
+         check(served == {TABLE: mod_file % "seed", FONT: "(the game's)"} and "not a zstd frame that gives its size" in log,
+               "a frame without its size: %s" % served)
+         n += 2
+diff --git a/tests/test_oot_song_inventory.py b/tests/test_oot_song_inventory.py
+index aca11671..943ace38 100644
+--- a/tests/test_oot_song_inventory.py
++++ b/tests/test_oot_song_inventory.py
+@@ -47,7 +47,7 @@ static int oot_gamedata_bool(Ctx *, uint32_t hash, int *value) {
+     *value = i->second;
+     return 1;
+ }
+-static int oot_gamedata_set_bool(Ctx *, uint32_t hash, int value) {
++static int oot_gamedata_queue_bool(Ctx *, uint32_t hash, int value) {
+     const auto i = flags.find(hash);
+     if (i == flags.end() || reject_flag_write) return 0;
+     i->second = value;
+diff --git a/tests/test_oot_state_tap.py b/tests/test_oot_state_tap.py
+index a22d3a12..e8f9fee2 100644
+--- a/tests/test_oot_state_tap.py
++++ b/tests/test_oot_state_tap.py
+@@ -38,6 +38,8 @@ FIXTURE_HEAD = r'''#include "control.h"
+ #include <windows.h>
+ #else
+ #include <pthread.h>
++#define VK_F9 0x78
++static short GetAsyncKeyState(int key) { (void)key; return 0; }
+ typedef long long LONG64;
+ typedef pthread_mutex_t SRWLOCK;
+ #define SRWLOCK_INIT PTHREAD_MUTEX_INITIALIZER
+diff --git a/tests/test_reserved_core.py b/tests/test_reserved_core.py
+index 42bb73c5..5e1d771a 100644
+--- a/tests/test_reserved_core.py
++++ b/tests/test_reserved_core.py
+@@ -243,7 +243,8 @@ static Host host_v = {
+ };
+ static Host* host = &host_v;
+ static bool async_on() { return false; }
+-static const uint8_t* memory_as_submitted(uint64_t, const uint8_t* p, uint64_t, std::vector<uint8_t>&) { return p; }
++static thread_local bool tl_first_upload = false, tl_reupload = false;
++static const uint8_t* memory_as_submitted(uint64_t, const uint8_t* p, uint64_t, std::vector<uint8_t>&, bool, bool) { return p; }
+ @REPLAY@
+ @TEXTURE@
+ }
+@@ -356,4 +357,4 @@ def threads_check(cxx, cc):
+ 
+ 
+ if __name__ == '__main__':
+-    main()
+\ No newline at end of file
++    main()
+diff --git a/tests/test_romfs_version.py b/tests/test_romfs_version.py
+index 018d7950..bcc586eb 100644
+--- a/tests/test_romfs_version.py
++++ b/tests/test_romfs_version.py
+@@ -16,6 +16,13 @@ FIRST = "ResourceSizeTable.Product.100.Nin_Ounce_NVN2.rsizetable.zs"   # (the ga
+ def romfs_with(root, table):
+     res = os.path.join(root, "System", "Resource")
+     os.makedirs(res)
++    os.makedirs(os.path.join(root, "Pack"))
++    with open(os.path.join(root, "Pack", "ZsDic.pack.zs"), "wb") as f:
++        f.write(b"authored dictionary")
++    heap = os.path.join(root, "System", "HeapSize")
++    os.makedirs(heap)
++    with open(os.path.join(heap, "Product.Nin_Ounce_NVN2.HeapDef.byml.zs"), "wb") as f:
++        f.write(b"authored heap")
+     if table:
+         with open(os.path.join(res, table), "wb") as f:
+             f.write(b"x")
+@@ -36,8 +43,8 @@ def main():
+         why = make_game.romfs_problem(first)
+         assert first in why and FIRST in why and make_game.ROMFS_TABLE in why and "another version" in why, why
+         why = make_game.romfs_problem(none)
+-        assert "not the game's own RomFS" in why and "0 files, 1 folders" in why, why
+-        assert "not the game's own RomFS" in make_game.romfs_problem(missing)
++        assert "not the game's own RomFS" in why and "0 files, 2 folders" in why, why
++        assert "no Pack/ZsDic.pack.zs" in make_game.romfs_problem(missing)
+ 
+         # read from a .nup : the message names the file the player chose, not a folder of the builder's
+         why = make_game.romfs_problem(first, nup="D:\\dumps\\game.nup")
+diff --git a/tests/test_sampler_stack_walk.py b/tests/test_sampler_stack_walk.py
+index 96643af2..2fe3863e 100644
+--- a/tests/test_sampler_stack_walk.py
++++ b/tests/test_sampler_stack_walk.py
+@@ -43,10 +43,12 @@ def sources():
+     # (each walk steps through it, on the right stack)
+     walks = (("static LONG WINAPI report_crash(", "const StackRange stack = own_stack();", "unwind_step(&ctx, stack)"),
+              ("static DWORD WINAPI sample_thread(void *p)", "thread_stack(th)", "unwind_step(&ctx, stack)"),
+-             ("static DWORD WINAPI sample_all_thread(void *p)", "thread_stack(th[i])", "unwind_step(&ctx, stack)"))
++             ("static DWORD WINAPI sample_all_thread(void *p)", "thread_stack(th[i])", "sample_walk(&ctx, stack,"))
+     for marker, stack_of, call in walks:
+         body = block(src, marker)
+         need(stack_of in body and call in body, "%s does not walk through unwind_step on its thread's stack" % marker)
++    need("unwind_step(ctx, stack)" in block(src, "__attribute__((noinline)) static void sample_walk("),
++         "the all-thread sample helper does not use unwind_step on the selected thread's stack")
+     return src
+ 
+ 
+diff --git a/tests/test_saveedit.py b/tests/test_saveedit.py
+index 19627cfb..29497393 100644
+--- a/tests/test_saveedit.py
++++ b/tests/test_saveedit.py
+@@ -16,6 +16,7 @@ from pathlib import Path
+ ROOT = Path(__file__).resolve().parents[1]
+ sys.path.insert(0, str(ROOT / "nx2" / "saveedit"))
+ import nxsave  # noqa: E402
++import oot_catalog as cat  # noqa: E402
+ 
+ TYPES = nxsave.TYPES
+ 
+@@ -26,13 +27,18 @@ def save_file(entries):
+     for name, t, v in entries:
+         by_type.setdefault(t, []).append((nxsave.murmur3(name.encode()) if isinstance(name, str) else name, v))
+     table = b""
++    extra = bytearray()
++    data_off = 0x20 + sum(8 + 8 * len(items) for items in by_type.values())
+     for t, items in by_type.items():
+         table += struct.pack("<II", 0, TYPES.index(t))
+         for h, v in items:
+-            table += struct.pack("<Ii", h, int(v)) if t == "Int" else struct.pack("<II", h, int(v))
+-    data_off = 0x20 + len(table)
++            if t == 'String64':
++                table += struct.pack('<II', h, data_off + len(extra))
++                extra.extend(v.encode('utf-8').ljust(64, b'\0'))
++            else:
++                table += struct.pack("<Ii", h, int(v)) if t == "Int" else struct.pack("<II", h, int(v))
+     head = struct.pack("<III", 0x01020304, 1, data_off).ljust(0x20, b"\0")
+-    return head + table + b"\0" * 8
++    return head + table + extra + b"\0" * 8
+ 
+ 
+ def main():
+@@ -81,6 +87,135 @@ def main():
+         assert by[nxsave.murmur3(b"PlayerStatus.Life")] == 11 and by[nxsave.murmur3(b"PlayerStatus.CurrentRupee")] == 150, by
+         cap = {e.hash: e.value for e in nxsave.SaveFile(slot / "caption.sav").entries}
+         assert cap[nxsave.murmur3(b"CaptionData.Life")] == 11 and cap[nxsave.murmur3(b"CaptionData.CurrentRupee")] == 150, cap
++        # A second slot exercises the same item, bottle and bag requests used by HAL.
++        another = slot.parent / 'slot_01'
++        another.mkdir()
++        progress = another / 'progress.sav'
++        progress.write_bytes(save_file([
++            ('PouchData.Item_Boomerang.StockNum', 'Int', 0),
++            ('IsGet.Item_Boomerang', 'Bool', 0), ('HavePlayedGetEvent.Item_Boomerang', 'Bool', 0),
++            ('PouchData.BottleA.StockNum', 'Int', 0), (0xF39CE410, 'Bool', 0), (0x7D48DF76, 'UInt', 0xBE69DE49),
++            (0xE753508B, 'Int', 0), ('PouchData.Item_BombBag_Small.StockNum', 'Int', 0),
++            ('PouchData.Item_BombBag_Medium.StockNum', 'Int', 0), ('PouchData.Item_BombBag_Large.StockNum', 'Int', 0),
++            ('PouchData.Item_Bomb.StockNum', 'Int', 0),
++            ('PouchData.Item_Hookshot.StockNum', 'Int', 0), ('PouchData.Item_Longshot.StockNum', 'Int', 0),
++            ('PouchData.Item_Ocarina_Fairy.StockNum', 'Int', 0), ('PouchData.Item_Ocarina_Time.StockNum', 'Int', 0),
++            ('PouchData.Item_Scale_Silver.StockNum', 'Int', 0), ('PouchData.Item_Scale_Gold.StockNum', 'Int', 0),
++            ('IsGet.Item_Scale_Gold', 'Bool', 0), ('HavePlayedGetEvent.Item_Scale_Gold', 'Bool', 0),
++            ('PlayerStatus.EquipOcarina', 'String64', ''),
++            ('PlayerStatus.MP', 'Int', 0), ('PlayerStatus.MPMax', 'Int', 0),
++            ('PouchData.Item_FairyBless_MP.StockNum', 'Int', 0), ('PouchData.Item_FairyBless_MPDouble.StockNum', 'Int', 0),
++            ('IsGet.Item_Melody_TimeSong', 'Bool', 0), ('IsGet.Item_Melody_EponaSong', 'Bool', 1),
++            ('HavePlayedGetEvent.Item_Melody_TimeSong', 'Bool', 1),
++        ]))
++        original = progress.read_bytes()
++        proc = subprocess.Popen([sys.executable, '-I', str(ROOT / 'nx2/saveedit/server.py'), '--game', str(game)],
++                                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8')
++        def ask(request):
++            proc.stdin.write(json.dumps(request) + '\n'); proc.stdin.flush()
++            return json.loads(proc.stdout.readline())
++        assert ask({'cmd': 'open', 'account': account, 'slot': 'slot_01'})['ok']
++        songs = ask({'cmd': 'songs'})['songs']
++        assert {s['song']: s['learned'] for s in songs} == {'TimeSong': False, 'EponaSong': True}
++        assert ask({'cmd': 'set_song', 'song': 'TimeSong', 'learned': True})['ok']
++        assert ask({'cmd': 'set_stat', 'key': 'meter', 'value': '1'})['max_magic'] == 24
++        assert ask({'cmd': 'set_stat', 'key': 'meter', 'value': '2'})['max_magic'] == 48
++        assert ask({'cmd': 'set_stat', 'key': 'meter', 'value': '0'})['max_magic'] == 0
++        assert ask({'cmd': 'set_stat', 'key': 'meter', 'value': '2'})['max_magic'] == 48
++        assert not ask({'cmd': 'set_song', 'song': 'Scarecrow', 'learned': True})['ok']
++        assert ask({'cmd': 'give', 'items': ['Item_Boomerang'], 'give': True})['ok']
++        assert ask({'cmd': 'set_stat', 'key': 'bottle:0', 'value': '2'})['ok']
++        assert ask({'cmd': 'set_stat', 'key': 'bag:bombs', 'value': '20'})['ok']
++        assert ask({'cmd': 'set_stat', 'key': 'bag:bombs', 'value': '40'})['ok']
++        assert ask({'cmd': 'set_stat', 'key': 'n:Item_Bomb', 'value': '35'})['ok']
++        lowered = ask({'cmd': 'set_stat', 'key': 'bag:bombs', 'value': '20'})
++        assert lowered['ok'] and next(x for x in lowered['amounts'] if x['item'] == 'Item_Bomb')['n'] == 20
++        assert [c['n'] for c in next(x for x in lowered['bags'] if x['key'] == 'bombs')['choices']] == [0, 20, 30, 40]
++        assert not ask({'cmd': 'set_stat', 'key': 'bag:bombs', 'value': '21'})['ok']
++        removed_bag = ask({'cmd': 'set_stat', 'key': 'bag:bombs', 'value': '0'})
++        assert removed_bag['ok'] and next(x for x in removed_bag['amounts'] if x['item'] == 'Item_Bomb')['n'] == 0
++        assert [c['n'] for c in next(x for x in removed_bag['bags'] if x['key'] == 'bombs')['choices']] == [0, 20, 30, 40]
++        assert ask({'cmd': 'set_stat', 'key': 'bag:bombs', 'value': '20'})['ok']
++        assert ask({'cmd': 'progressive', 'group': 'hookshot', 'item': 'Item_Longshot'})['ok']
++        assert ask({'cmd': 'progressive', 'group': 'ocarina', 'item': 'Item_Ocarina_Fairy'})['ok']
++        assert ask({'cmd': 'progressive', 'group': 'ocarina', 'item': 'Item_Ocarina_Time'})['ok']
++        assert ask({'cmd': 'progressive', 'group': 'scale', 'item': 'Item_Scale_Silver'})['ok']
++        assert ask({'cmd': 'progressive', 'group': 'scale', 'item': 'Item_Scale_Gold'})['ok']
++        assert ask({'cmd': 'progressive', 'group': 'scale', 'item': None})['ok']
++        assert ask({'cmd': 'progressive', 'group': 'scale', 'item': 'Item_Scale_Gold'})['ok']
++        assert not ask({'cmd': 'progressive', 'group': 'scale', 'item': 'Item_Boomerang'})['ok']
++        bad = ask({'cmd': 'progressive', 'group': 'hookshot', 'item': 'Item_Boomerang'})
++        assert not bad['ok']
++        assert progress.read_bytes() == original, 'staged changes must not write the save'
++        assert ask({'cmd': 'give', 'items': ['Item_Boomerang'], 'give': False})['ok']
++        assert ask({'cmd': 'give', 'items': ['Item_Boomerang'], 'give': True})['ok']
++        assert ask({'cmd': 'save'})['ok']
++        result = {e.hash: e.value for e in nxsave.SaveFile(progress).entries}
++        assert result[nxsave.murmur3(b'PouchData.Item_Boomerang.StockNum')] == 1
++        assert result[nxsave.murmur3(b'PouchData.BottleA.StockNum')] == 1
++        assert result[0x7D48DF76] == 0xEABA6067 and result[0xE753508B] == 20
++        assert result[nxsave.murmur3(b'PouchData.Item_BombBag_Small.StockNum')] == 1
++        assert result[nxsave.murmur3(b'PouchData.Item_BombBag_Medium.StockNum')] == 0
++        assert result[nxsave.murmur3(b'PouchData.Item_BombBag_Large.StockNum')] == 0
++        assert result[nxsave.murmur3(b'PouchData.Item_Bomb.StockNum')] == 0
++        assert result[nxsave.murmur3(b'PouchData.Item_Longshot.StockNum')] == 1
++        assert result[nxsave.murmur3(b'PouchData.Item_Hookshot.StockNum')] == 0
++        assert result[nxsave.murmur3(b'PlayerStatus.EquipOcarina')] == 'Item_Ocarina_Time'
++        assert result[nxsave.murmur3(b'PouchData.Item_Ocarina_Time.StockNum')] == 1
++        assert result[nxsave.murmur3(b'PouchData.Item_Ocarina_Fairy.StockNum')] == 0
++        assert result[nxsave.murmur3(b'PouchData.Item_Scale_Silver.StockNum')] == 0
++        assert result[nxsave.murmur3(b'PouchData.Item_Scale_Gold.StockNum')] == 1
++        assert result[nxsave.murmur3(b'IsGet.Item_Scale_Gold')] == 1
++        assert result[nxsave.murmur3(b'HavePlayedGetEvent.Item_Scale_Gold')] == 1
++        assert result[nxsave.murmur3(b'IsGet.Item_Melody_TimeSong')] == 1
++        assert result[nxsave.murmur3(b'IsGet.Item_Melody_EponaSong')] == 1
++        assert result[nxsave.murmur3(b'HavePlayedGetEvent.Item_Melody_TimeSong')] == 1
++        assert result[nxsave.murmur3(b'PlayerStatus.MPMax')] == 480
++        assert result[nxsave.murmur3(b'PouchData.Item_FairyBless_MP.StockNum')] == 1
++        assert result[nxsave.murmur3(b'PouchData.Item_FairyBless_MPDouble.StockNum')] == 1
++        assert ask({'cmd': 'progressive', 'group': 'ocarina', 'item': ''})['ok']
++        assert ask({'cmd': 'save'})['ok']
++        removed = {e.hash: e.value for e in nxsave.SaveFile(progress).entries}
++        assert removed[nxsave.murmur3(b'PlayerStatus.EquipOcarina')] == ''
++        assert removed[nxsave.murmur3(b'PouchData.Item_Ocarina_Time.StockNum')] == 0
++        assert ask({'cmd': 'set_stat', 'key': 'bottle:0', 'value': '0'})['ok']
++        externally_changed = progress.read_bytes() + b'external change'
++        progress.write_bytes(externally_changed)
++        conflict = ask({'cmd': 'save'})
++        assert not conflict['ok'] and 'changed on disk' in conflict['error']
++        assert progress.read_bytes() == externally_changed
++        proc.stdin.close(); proc.wait(timeout=10)
++
++        # Exercise all plain item toggles and songs through the public protocol.
++        # This synthetic slot has no equipped items, so both directions are safe.
++        all_slot = slot.parent / 'slot_02'; all_slot.mkdir()
++        givable = [item for item, _, _, _, allowed in cat.ITEMS if allowed]
++        editable = [item for item in givable if item not in cat.DEFAULT_CLOTHES]
++        song_names = ('ZeldaLullaby', 'EponaSong', 'SariaSong', 'SunSong', 'TimeSong', 'StormSong',
++                      'ForestMinuet', 'FireBolero', 'WaterSerenade', 'ShadowNocturne', 'SpiritRequiem', 'LightPrelude')
++        fields = [(cat.stock(item), 'Int', 0) for item in givable]
++        fields += [('IsGet.' + item, 'Bool', 0) for item in givable]
++        fields += [('HavePlayedGetEvent.' + item, 'Bool', 0) for item in givable]
++        fields += [('IsGet.Item_Melody_' + song, 'Bool', 0) for song in song_names]
++        all_progress = all_slot / 'progress.sav'; all_progress.write_bytes(save_file(fields))
++        proc = subprocess.Popen([sys.executable, '-I', str(ROOT / 'nx2/saveedit/server.py'), '--game', str(game)],
++                                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8')
++        assert ask({'cmd': 'open', 'account': account, 'slot': 'slot_02'})['ok']
++        granted = ask({'cmd': 'give', 'items': editable, 'give': True})
++        assert granted['ok'] and granted['done'] == len(editable) and not granted['problems']
++        for song in song_names: assert ask({'cmd': 'set_song', 'song': song, 'learned': True})['ok']
++        assert ask({'cmd': 'save'})['ok']
++        by = {e.hash: e.value for e in nxsave.SaveFile(all_progress).entries}
++        assert all(by[cat.h(cat.stock(item))] == 1 for item in editable)
++        assert all(by[cat.h('IsGet.Item_Melody_' + song)] == 1 for song in song_names)
++        removed = ask({'cmd': 'give', 'items': editable, 'give': False})
++        assert removed['ok'] and removed['done'] == len(editable) and not removed['problems']
++        for song in song_names: assert ask({'cmd': 'set_song', 'song': song, 'learned': False})['ok']
++        assert ask({'cmd': 'save'})['ok']
++        by = {e.hash: e.value for e in nxsave.SaveFile(all_progress).entries}
++        assert all(by[cat.h(cat.stock(item))] == 0 for item in editable)
++        assert all(by[cat.h('IsGet.Item_Melody_' + song)] == 0 for song in song_names)
++        proc.stdin.close(); proc.wait(timeout=10)
+     print("save editor: accounts, open, hearts and rupees in and out of range, save with backups")
+ 
+ 
+diff --git a/tests/test_sdl_audio_reopen.py b/tests/test_sdl_audio_reopen.py
+index fa9030c2..fb5241e3 100644
+--- a/tests/test_sdl_audio_reopen.py
++++ b/tests/test_sdl_audio_reopen.py
+@@ -28,6 +28,10 @@ DRIVER = r'''#include <windows.h>
+ #include <stdlib.h>
+ #include <time.h>
+ void hos_log(const char *fmt, ...) { va_list a; va_start(a, fmt); vfprintf(stderr, fmt, a); va_end(a); fputc('\n', stderr); }
++void hos_audio_output_preference(char *id, int capacity, unsigned *generation) {
++    if (capacity > 0) id[0] = '\0';
++    *generation = 0;
++}
+ 
+ static int played(WAVEHDR *h) {   /* (the device's callback took the block within 2 s) */
+     for (int i = 0; i < 400; i++) {
+diff --git a/tests/test_udmabuf_selection.py b/tests/test_udmabuf_selection.py
+index 574ea000..8d37fd24 100644
+--- a/tests/test_udmabuf_selection.py
++++ b/tests/test_udmabuf_selection.py
+@@ -37,6 +37,7 @@ FIXTURE = r'''
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include "hookshot_env.h"
+ static const char *authored_limit;
+ static int reads, closes, notices;
+ static FILE *limit_file(const char *path, const char *mode) {
+@@ -49,15 +50,16 @@ static int close_device(int fd) { assert(fd==42); ++closes; return 0; }
+ #define fopen limit_file
+ #define close close_device
+ #define hos_log(...) (++notices)
+-static void probe(int u, const char *e) {
++static void probe(int u, const char *e, int no_dmabuf) {
+     int usable=0;
++    (void)no_dmabuf;
+     unsigned long long limit_mb=0;
+ @@BLOCK@@
+     printf("%d,%llu,%d,%d,%d,%d\n",usable,limit_mb,@@SELECTION@@,reads,closes,notices);
+ }
+ int main(int argc, char **argv) {
+-    assert(argc==4); authored_limit=strcmp(argv[2],"missing") ? argv[2] : NULL;
+-    probe(atoi(argv[1]),strcmp(argv[3],"unset") ? argv[3] : NULL); return 0;
++    assert(argc==5); authored_limit=strcmp(argv[2],"missing") ? argv[2] : NULL;
++    probe(atoi(argv[1]),strcmp(argv[3],"unset") ? argv[3] : NULL,atoi(argv[4])); return 0;
+ }
+ '''
+ 
+@@ -71,7 +73,7 @@ def main():
+     source = args.source.read_text(encoding="utf-8")
+     start = source.index('            if (u >= 0) {', source.index('getenv("HOS_GUEST_MEMFD")'))
+     block = source[start:source.index('            if (!usable && !e)', start)]
+-    selection = re.search(r'if \((e \? atoi\(e\) != 0 : usable)\)', source).group(1)
++    selection = re.search(r'if \((e \? !env_value_off\(e\) : usable && !no_dmabuf)\)', source).group(1)
+     code = FIXTURE.replace("@@BLOCK@@", block).replace("@@SELECTION@@", selection)
+     with tempfile.TemporaryDirectory(prefix="udmabuf-selection-") as folder:
+         root = Path(folder)
+@@ -79,11 +81,15 @@ def main():
+         def check(text):
+             c, exe = root / "fixture.c", root / "fixture"
+             c.write_text(text, encoding="utf-8")
+-            subprocess.run([args.cc, "-std=c11", "-Wall", "-Wextra", "-Werror", str(c), "-o", str(exe)],
++            subprocess.run([args.cc, "-std=c11", "-Wall", "-Wextra", "-Werror", "-I", str(ROOT / "gpu/vk/compat"), str(c), "-o", str(exe)],
+                            check=True, timeout=60)
+             failures = []
+-            for label, device, limit, override, expected in CASES:
+-                result = subprocess.run([str(exe), str(device), limit, override], check=True,
++            cases = [(*row, 0) for row in CASES] + [
++                ("dmabuf disabled", 42, "64", "unset", (1, 64, 0, 1, 1, 0), 1),
++                ("explicit memfd overrides dmabuf disabled", 42, "64", "1", (1, 64, 1, 1, 1, 0), 1),
++            ]
++            for label, device, limit, override, expected, no_dmabuf in cases:
++                result = subprocess.run([str(exe), str(device), limit, override, str(no_dmabuf)], check=True,
+                                         capture_output=True, text=True, timeout=10)
+                 actual = tuple(map(int, result.stdout.strip().split(",")))
+                 if actual != expected:
+@@ -91,7 +97,7 @@ def main():
+             return failures
+ 
+         assert not (failures := check(code)), failures
+-        print("PASS: 16 production startup-selection cases; no real device or process setting changed")
++        print("PASS: 18 production startup-selection cases; no real device or process setting changed")
+         if args.mutations:
+             mutations = [
+                 ("fallback lost", "limit_mb = 64;", "limit_mb = 0;"),
+@@ -100,6 +106,7 @@ def main():
+                  'if (fscanf(f, "%llu", &limit_mb) != 1) limit_mb = 64;'),
+                 ("explicit off ignored", selection, "e ? usable : usable"),
+                 ("explicit on ignored", selection, "e ? 0 : usable"),
++                ("dmabuf disable ignored", selection, "e ? !env_value_off(e) : usable"),
+             ]
+             for label, before, after in mutations:
+                 assert code.count(before) == 1, label
