@@ -718,6 +718,17 @@ internal static class HAL_Program
             Check(missingToolsScreen.FindControl<HAL_BuildProgressView>("InstallProgress")!.ResultText.Contains("build tools are missing"),
                 "setup blocks a development build when its build tools are missing");
             missingToolsInstaller.Close(); Pump();
+            var unpatchedRoot = Path.Combine(root, "stock-tools");
+            Directory.CreateDirectory(Path.Combine(unpatchedRoot, "nx2"));
+            File.WriteAllText(Path.Combine(unpatchedRoot, "nx2", "make_game.py"), "# ordinary builder fixture\n");
+            var stockToolsInstaller = new HAL_DevelopmentBuildDialog(unpatchedRoot, installPreferences,
+                buildSource, customOutput, false, true, true, 4);
+            stockToolsInstaller.Show(window); Pump();
+            stockToolsInstaller.Screen.FindControl<Button>("InstallNextButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            stockToolsInstaller.Screen.FindControl<Button>("InstallReviewButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Check(stockToolsInstaller.Screen.FindControl<HAL_BuildProgressView>("InstallProgress")!.ResultText.Contains("do not include HAL's randomizer integration"),
+                "setup rejects a stock builder that cannot compile the randomizer hooks");
+            stockToolsInstaller.Close(); Pump();
             var existingGame = Path.Combine(root, "existing-hookshot");
             Directory.CreateDirectory(Path.Combine(existingGame, "romfs"));
             Directory.CreateDirectory(Path.Combine(existingGame, ".hookshot_exefs"));
@@ -1162,8 +1173,17 @@ internal static class HAL_Program
                   window.FindControl<Button>("CreateActionButton")!.Content?.ToString() == "Create profile and generate seed",
                 "Randomized creation exposes a generated and editable seed");
             Check(!window.FindControl<Button>("CreateActionButton")!.IsEnabled &&
-                  window.FindControl<TextBlock>("CreateNotice")!.Text!.Contains("compiled with native randomizer support"),
+                  window.FindControl<TextBlock>("CreateNotice")!.Text!.Contains("compiled with native randomizer support") &&
+                  window.FindControl<Button>("CreateRandomizerSetupButton")!.IsVisible,
                 "Randomized creation clearly reports and blocks when the selected game build lacks native support");
+            Click(window, "CreateRandomizerSetupButton"); Pump();
+            var randomizerSetup = window.OwnedWindows.OfType<HAL_DevelopmentBuildDialog>().Single();
+            Check(randomizerSetup.Screen.FindControl<HAL_BuildProgressView>("InstallProgress") is not null,
+                "randomizer setup prompt opens the installer with build progress");
+            randomizerSetup.Close(); Pump();
+            Check(window.FindControl<Button>("CreateRandomizerSetupButton")!.IsVisible &&
+                  !window.FindControl<Button>("CreateActionButton")!.IsEnabled,
+                "cancelling setup leaves randomized creation blocked and offers setup again");
             var priorSeed = seedInput.Text;
             Click(window, "CreateSeedButton");
             Check(seedInput.Text?.Length == 16 && seedInput.Text != priorSeed && seedInput.Text!.All(Uri.IsHexDigit),
@@ -1171,7 +1191,8 @@ internal static class HAL_Program
             window.FindControl<CheckBox>("CreateRandomizedCheck")!.IsChecked = false;
             Pump();
             Check(window.FindControl<Button>("CreateActionButton")!.IsEnabled &&
-                  window.FindControl<Button>("CreateActionButton")!.Content?.ToString() == "Create profile",
+                  window.FindControl<Button>("CreateActionButton")!.Content?.ToString() == "Create profile" &&
+                  !window.FindControl<Button>("CreateRandomizerSetupButton")!.IsVisible,
                 "Vanilla profile creation remains available when randomized support is missing");
             window.Close(); Pump();
             Console.WriteLine("PASS GUI opened, navigated, rendered all themes, and closed with an isolated fixture registry.");

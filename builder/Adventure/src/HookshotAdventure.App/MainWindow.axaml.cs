@@ -830,13 +830,20 @@ public partial class MainWindow : Window
         var create = this.FindControl<Button>("CreateActionButton")!;
         create.Content = randomized ? "Create profile and generate seed" : "Create profile";
         create.IsEnabled = !randomized || canCreateRandomized;
+        this.FindControl<Button>("CreateRandomizerSetupButton")!.IsVisible = randomized && !canCreateRandomized;
         this.FindControl<TextBlock>("CreateNotice")!.Text = randomized
             ? canCreateRandomized
                 ? "Full-game chest placement is experimental: full-game reachability is not verified. Creating this profile generates its fixed seed once."
-                : "Randomized profile creation needs a Hookshot-Dev build compiled with native randomizer support. Select that build in Settings; vanilla profiles can still be created."
+                : "Randomized adventures need a separate Hookshot-Dev build compiled with native randomizer support. Set it up using your existing Hookshot game files; HAL will show build progress."
             : "A new isolated save directory will be created. Other profiles are untouched.";
         var name = this.FindControl<TextBox>("CreateNameBox")!;
         if (name.Text is "Link" or "Randomized") name.Text = randomized ? "Randomized" : "Link";
+    }
+
+    private async void CreateRandomizerSetup_Click(object? sender, RoutedEventArgs e)
+    {
+        await HAL_OpenDevInstaller();
+        CreateMode_Changed(null, new RoutedEventArgs());
     }
 
     private bool HasDevRandomizerBuild()

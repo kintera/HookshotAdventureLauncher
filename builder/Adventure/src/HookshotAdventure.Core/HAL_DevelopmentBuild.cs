@@ -131,7 +131,11 @@ public sealed record HAL_DevelopmentBuild(string Root, string Output, string Bui
     // Moving old entries also moves symlinks themselves, never the stock files they reference.
     public void InstallCompletedBuild()
     {
-        if (UpdateExisting) return;
+        if (UpdateExisting)
+        {
+            HAL_RandomizerSeedService.EnsureDevRandomizerBuild(Output);
+            return;
+        }
         if (ProfileRepository.IsLink(Output) || ProfileRepository.IsLink(BuildDirectory))
             throw new IOException("Installation directory became a symbolic link.");
         if (!HookshotGame.IsInstalled(BuildDirectory))

@@ -3,8 +3,8 @@
     <OutputType>WinExe</OutputType>
     <ApplicationIcon>Assets/HAL_hookshot.ico</ApplicationIcon>
     <TargetFramework>net10.0</TargetFramework>
-    <Version>0.9.1-alpha</Version>
-    <InformationalVersion>0.9.01-alpha</InformationalVersion>
+    <Version>0.9.1-alpha.1</Version>
+    <InformationalVersion>0.9.01-alpha.1</InformationalVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>

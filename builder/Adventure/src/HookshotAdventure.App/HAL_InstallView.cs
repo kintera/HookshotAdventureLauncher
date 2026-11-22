@@ -127,7 +127,7 @@ public sealed class HAL_InstallView : UserControl
         var introduction = new StackPanel { Spacing = 18, Children =
         {
             new TextBlock { Text = development ? "Welcome to Hookshot-Dev setup" : "Welcome to Hookshot setup", FontSize = 23, FontWeight = FontWeight.SemiBold },
-            new TextBlock { Text = "Install Hookshot from your own local game files. Next, choose your game source, installation location and build options.", TextWrapping = TextWrapping.Wrap },
+            new TextBlock { Text = development ? "Build a separate Hookshot installation with HAL's randomizer integration from your own local game files. Next, choose your game source, installation location and build options." : "Install Hookshot from your own local game files. Next, choose your game source, installation location and build options.", TextWrapping = TextWrapping.Wrap },
             new TextBlock { Text = "Your source files stay unchanged. Installation can take a while; the final screen shows progress and the live build log.", TextWrapping = TextWrapping.Wrap }
         } };
         var missingTools = new TextBlock { Name = "InstallMissingToolsNotice", TextWrapping = TextWrapping.Wrap,
@@ -135,6 +135,9 @@ public sealed class HAL_InstallView : UserControl
             Text = "HAL's Hookshot-Dev build tools were not found. You can download the official Builder below; to build Hookshot-Dev, follow the HAL setup instructions for a compatible Hookshot source checkout." };
         Name("InstallMissingToolsNotice", missingTools);
         introduction.Children.Add(missingTools);
+        if (development && OperatingSystem.IsWindows())
+            introduction.Children.Add(new TextBlock { TextWrapping = TextWrapping.Wrap,
+                Text = "Windows support is experimental. Hookshot's Python packages, compiler and other build prerequisites must be installed before building; see READ-ME-FIRST.txt in the package." });
         var downloadStatus = new TextBlock { TextWrapping = TextWrapping.Wrap };
         var download = Button("Download Hookshot Builder…");
         var cancelDownload = Button("Cancel download");
@@ -272,6 +275,8 @@ public sealed class HAL_InstallView : UserControl
     {
         if (!File.Exists(Path.Combine(_root, "nx2", "make_game.py")))
             throw new InvalidOperationException("HAL's Hookshot build tools are missing. Follow the HAL setup instructions to integrate a compatible Hookshot source checkout.");
+        if (_development && !File.ReadAllText(Path.Combine(_root, "nx2", "make_game.py")).Contains("hookshot_randomizer_capability.txt", StringComparison.Ordinal))
+            throw new InvalidOperationException("These Hookshot build tools do not include HAL's randomizer integration. Use the matching HAL package or integrate a compatible Hookshot source checkout.");
         var workers = ShaderWorkers;
         var jobs = ParseWorkers(_jobs.Text, "Build jobs", 256) ?? 0;
         ProcessStartInfo info; string log; Action? install = null;

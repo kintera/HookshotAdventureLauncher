@@ -374,6 +374,8 @@
               <TextBlock x:Name="CreateNotice" Classes="subtitle"
                          Text="A new isolated save directory will be created. Other profiles are untouched."
                          TextWrapping="Wrap"/>
+              <Button x:Name="CreateRandomizerSetupButton" Classes="raised" Content="Set up randomizer build…"
+                      HorizontalAlignment="Left" IsVisible="False" Click="CreateRandomizerSetup_Click"/>
               <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
                 <Button Classes="raised" Content="Cancel" Click="Adventure_Click"/>
                 <Button x:Name="CreateActionButton" Classes="raised primary" Content="Create profile" Click="Create_Click"/>

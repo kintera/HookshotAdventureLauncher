@@ -2,7 +2,7 @@
 
 # Hookshot Adventure Launcher
 
-**Version 0.9.01 alpha · C# / .NET / Avalonia**
+**Version 0.9.01 alpha.1 · C# / .NET / Avalonia**
 
 Hookshot Adventure Launcher brings profiles, save management, an in-place save editor, experimental randomizer settings, and visual customization together in one interface for Hookshot. Choose an adventure, review a save, and launch it from a desktop or Steam Deck-sized window.
 
@@ -71,10 +71,12 @@ The launcher also provides settings for game launches, shader and pipeline tools
 
 ## Download and setup
 
-[Download 0.9.01 alpha](https://github.com/kintera/HookshotAdventureLauncher/releases/tag/v0.9.01-alpha)
+[Download 0.9.01 alpha.1](https://github.com/kintera/HookshotAdventureLauncher/releases/tag/v0.9.01-alpha.1)
 
-- **Linux x86-64:** Download the AppImage, make it executable (`chmod +x HookshotAdventure-0.9.01-alpha-Linux-x86_64.AppImage`), then run it. HAL updates are manual in this alpha.
+- **Linux x86-64:** Download the AppImage, make it executable (`chmod +x HookshotAdventure-0.9.01-alpha.1-Linux-x86_64.AppImage`), then run it. HAL updates are manual in this alpha.
 - **Windows x86-64 (experimental):** Download and extract the experimental ZIP, then run `HookshotAdventure.App.exe`. The launcher has been cross-built but has not yet been tested on Windows. Building Hookshot-Dev requires additional Windows build tools; see the included `READ-ME-FIRST.txt` and `CONTRIBUTING.md`.
+
+When a randomized adventure needs a compatible build, choose **Set up randomizer build**. HAL guides you through selecting your game files and building a separate Hookshot-Dev installation, with a progress bar and live log. Windows build prerequisites are required separately.
 
 Both packages require your own compatible game files; neither contains a game dump or built game. Randomized adventures require a HAL-compatible Hookshot-Dev build. Updating that build can remove the randomizer hooks, so rebuild it with HAL before playing randomized adventures. Steam Deck installation still needs wider testing.
 
@@ -128,7 +130,7 @@ builder/qt/                                    Earlier v0.8 launcher source
 
 ## Testing and limitations
 
-Run `./hookshot-dev.sh --test` from the integrated Hookshot checkout for the C# core smoke tests. The [testing handoff](builder/Adventure/docs/TESTING_HANDOFF.md) records known issues and gameplay scenarios; game-free tests do not establish compatibility or beatability. The original v0.8 source remains in `builder/qt/` for reference. Release notes for this update are in [0.9.01 alpha](docs/RELEASE_0.9.01.md), and the [earlier release notes](docs/RELEASE_NOTES.md) remain available.
+Run `./hookshot-dev.sh --test` from the integrated Hookshot checkout for the C# core smoke tests. The [testing handoff](builder/Adventure/docs/TESTING_HANDOFF.md) records known issues and gameplay scenarios; game-free tests do not establish compatibility or beatability. The original v0.8 source remains in `builder/qt/` for reference. Release notes are in [0.9.01 alpha.1](docs/RELEASE_0.9.01_ALPHA1.md) and [0.9.01 alpha](docs/RELEASE_0.9.01.md), and the [earlier release notes](docs/RELEASE_NOTES.md) remain available.
 
 For the planned Hookshot 3.0.2 port, see the [HAL 0.9.02 handoff](builder/Adventure/docs/HAL_0.9.02_HOOKSHOT_3.0.2_HANDOFF.md).
 

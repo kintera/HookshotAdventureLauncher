@@ -967,6 +967,14 @@ try
     AssertTest.True(managedUpdate.UpdateExisting && managedUpdate.StartInfo.ArgumentList.Contains("--update") &&
         managedUpdate.StartInfo.Environment["HOOKSHOT_DEV_RANDOMIZER"] == "1",
         "subsequent development updates remain managed by our tool");
+    File.WriteAllText(Path.Combine(initialOutput, "hookshot_randomizer_capability.txt"), "HOOKSHOT_DEV_RANDOMIZER=0\n");
+    bool rejectedUnpatchedUpdate = false;
+    try { managedUpdate.InstallCompletedBuild(); }
+    catch (InvalidOperationException) { rejectedUnpatchedUpdate = true; }
+    AssertTest.True(rejectedUnpatchedUpdate, "an update without the randomizer capability marker cannot report success");
+    File.WriteAllText(Path.Combine(initialOutput, "hookshot_randomizer_capability.txt"), "HOOKSHOT_DEV_RANDOMIZER=1\n");
+    managedUpdate.InstallCompletedBuild();
+    AssertTest.True(true, "an update with the randomizer capability marker is accepted");
     AssertTest.True(HAL_DevelopmentBuild.FailureDetails(1,
         "@@error Missing Linux build prerequisites: Python module unicorn", "")
         .Contains("Prepare Linux build tools", StringComparison.Ordinal),
