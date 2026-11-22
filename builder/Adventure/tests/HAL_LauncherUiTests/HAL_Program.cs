@@ -604,6 +604,16 @@ internal static class HAL_Program
                   window.FindControl<Button>("HAL_InformationDiscord") is { IsEffectivelyVisible: true } &&
                   window.FindControl<Button>("HAL_InformationHookshot") is { IsEffectivelyVisible: true },
                 "Information tab displays the project and community links");
+            Check(window.FindControl<TextBlock>("HAL_InfoUpdateWarning") is { IsEffectivelyVisible: true, Text: { } infoWarning } &&
+                  infoWarning.Contains("likely remove HAL’s randomizer hooks", StringComparison.Ordinal) &&
+                  infoWarning.Contains("rebuild Hookshot-Dev", StringComparison.Ordinal),
+                "Information explains that updating the randomized build can break the randomizer");
+            settingsSections.SelectedIndex = 2;
+            Pump();
+            Check(window.FindControl<TextBlock>("HAL_HookshotUpdateWarning") is { IsEffectivelyVisible: true, Text: { } updateWarning } &&
+                  updateWarning.Contains("likely remove HAL’s randomizer hooks", StringComparison.Ordinal) &&
+                  updateWarning.Contains("rebuild Hookshot-Dev", StringComparison.Ordinal),
+                "Reinstall warns before opening Hookshot Builder");
             Check(window.FindControl<TextBlock>("WarningTitle") is not null &&
                   window.FindControl<TextBox>("DevSourceBox") is not null &&
                   window.FindControl<Button>("RestoreCompressedBackupButton") is not null &&
