@@ -6,6 +6,8 @@ Hookshot Adventure Launcher brings profiles, save management, an in-place save e
 
 > **Alpha source update:** This is for testing, not a finished randomizer or a ready-to-run game download. Some checks and event rewards remain vanilla, full-game beatability is not established, and several features still need gameplay testing. Back up important saves before experimenting.
 
+The C# launcher and integration are currently on the [0.9.01 alpha branch](https://github.com/kintera/HookshotAdventureLauncher/tree/release/v0.9.01-alpha); the default `main` branch still contains the earlier v0.8 launcher. Follow the branch checkout in [Setup](#setup) to try the alpha.
+
 [Set up the launcher](#setup) · [Save editor](#save-editor) · [Randomizer](#randomizer) · [Enhancements](#enhancements) · [Testing and limitations](#testing-and-limitations)
 
 ## Adventures and saves
@@ -31,7 +33,7 @@ Adding a slingshot or bow also adds its basic seed bag or quiver when needed. So
 
 ## Randomizer
 
-The randomizer is being developed around [Ship of Harkinian's randomizer](https://www.shipofharkinian.com/randomizer) as a reference for its settings, placement, and world logic. Hookshot Adventure's implementation is still in development and does not yet have feature parity; see the [world logic notes](builder/Adventure/docs/WORLD_LOGIC.md) for the current approach.
+The randomizer is being developed around [Ship of Harkinian's randomizer](https://www.shipofharkinian.com/randomizer) as a reference for its settings, placement, and world logic. Hookshot Adventure's implementation is still in development and does not yet have feature parity; see the [world logic notes](https://github.com/kintera/HookshotAdventureLauncher/blob/release/v0.9.01-alpha/builder/Adventure/docs/WORLD_LOGIC.md) for the current approach.
 
 Create a randomized adventure with a profile-bound seed and configure the next seed from **Randomizer**. Existing seeds keep their recorded settings. The launcher scans the player's local game files for supported chest locations and lets players mark individual checks as filler-only. It also provides starting equipment, songs, consumables, and maps/compasses; supported chest sources for starting items are replaced with blue rupees.
 
@@ -39,7 +41,7 @@ Reviewed heart-piece chests and limited Saria, Lost Woods target, and one-time S
 
 ![Randomizer shuffle options](docs/screenshots/0.9.01-randomizer.png)
 
-The opening logic has checks, but the solver does not prove a full game is beatable. Event reward coverage is partial, and ammunition chests can still give arrows, bombs, or seeds before the corresponding bag is owned. Song, shop, and scrub shuffles and several other features are not implemented. See the [testing handoff](builder/Adventure/docs/TESTING_HANDOFF.md) before starting a test seed.
+The opening logic has checks, but the solver does not prove a full game is beatable. Event reward coverage is partial, and ammunition chests can still give arrows, bombs, or seeds before the corresponding bag is owned. Song, shop, and scrub shuffles and several other features are not implemented. See the [testing handoff](https://github.com/kintera/HookshotAdventureLauncher/blob/release/v0.9.01-alpha/builder/Adventure/docs/TESTING_HANDOFF.md) before starting a test seed.
 
 ## Enhancements
 
@@ -58,9 +60,11 @@ This repository contains launcher source and a version-specific integration patc
    git -C Hookshot-v3.0.0 checkout 29619a1cdc9d15e450761600f4e8adc0ba14e23e
    ```
 
-2. From a checkout of this launcher repository, apply the integration to that fresh Hookshot checkout:
+2. Check out the alpha launcher source and apply its integration to the fresh Hookshot checkout:
 
    ```sh
+   git clone --branch release/v0.9.01-alpha https://github.com/kintera/HookshotAdventureLauncher.git
+   cd HookshotAdventureLauncher
    ./install-into-hookshot.sh /path/to/Hookshot-v3.0.0
    ```
 
@@ -76,11 +80,11 @@ This repository contains launcher source and a version-specific integration patc
 
 ![Development installation setup with example paths](docs/screenshots/0.9.01-install.png)
 
-`./hookshot-dev.sh --builtin` opens the original Hookshot Builder. The launcher interface and randomizer preparation use C#; Hookshot's own build pipeline and save-editor backend still use Python. Detailed instructions, including build-tool setup and the local icon cache, are in the [Adventure documentation](builder/Adventure/README.md).
+`./hookshot-dev.sh --builtin` opens the original Hookshot Builder. The launcher interface and randomizer preparation use C#; Hookshot's own build pipeline and save-editor backend still use Python. Detailed instructions, including build-tool setup and the local icon cache, are in the [Adventure documentation](https://github.com/kintera/HookshotAdventureLauncher/blob/release/v0.9.01-alpha/builder/Adventure/README.md).
 
 ## Testing and limitations
 
-Run `./hookshot-dev.sh --test` from the integrated Hookshot checkout for the C# core smoke tests. The [testing handoff](builder/Adventure/docs/TESTING_HANDOFF.md) records known issues and gameplay scenarios; game-free tests do not establish compatibility or beatability. The original v0.8 source remains in `builder/qt/` for reference.
+Run `./hookshot-dev.sh --test` from the integrated Hookshot checkout for the C# core smoke tests. The [testing handoff](https://github.com/kintera/HookshotAdventureLauncher/blob/release/v0.9.01-alpha/builder/Adventure/docs/TESTING_HANDOFF.md) records known issues and gameplay scenarios; game-free tests do not establish compatibility or beatability. The original v0.8 source remains in `builder/qt/` for reference.
 
 ## Game data and license
 
