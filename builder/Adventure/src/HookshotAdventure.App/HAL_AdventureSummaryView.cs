@@ -60,8 +60,7 @@ public sealed class HAL_AdventureSummaryView : UserControl
     };
     private static readonly string[] ChildTrade =
     {
-        "trade_weird_egg", "trade_wake_up_cucco", "trade_zelda_letter",
-        "mask_keaton", "mask_skull", "mask_spooky", "mask_bunny", "mask_truth"
+        "trade_weird_egg", "trade_wake_up_cucco", "trade_zelda_letter"
     };
     private Color Accent => Color.Parse(_theme.Rim);
     private Color Surface => Color.Parse(_theme.Dark);
