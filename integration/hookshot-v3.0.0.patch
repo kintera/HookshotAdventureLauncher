@@ -1268,7 +1268,7 @@ index b7c8edcf..90273b68 100644
      q.add_argument("--timeout", type=float, default=600, help="seconds to wait for the bridge (shaders may be prepared first)")
      sub.add_parser("status")
 diff --git a/scripts/linux/appimage.sh b/scripts/linux/appimage.sh
-index 1d8ddfec..95903b71 100755
+index 1d8ddfec..6286ca20 100755
 --- a/scripts/linux/appimage.sh
 +++ b/scripts/linux/appimage.sh
 @@ -5,6 +5,8 @@
@@ -1353,7 +1353,17 @@ index 1d8ddfec..95903b71 100755
  cp -a gpu/render/*.h "$T/gpu/render/"
  # (every gpu/vk header the host's sources include: v2.0.6 shipped without oot_cheat_items.h and no Linux build finished, issue 990.
  # tests/test_appimage_headers.py checks that this covers what host/ includes)
-@@ -103,7 +158,10 @@ for d in "$DEPS"/cpm/*/*; do
+@@ -81,7 +136,8 @@ cp -a third_party/zbic "$T/third_party/"
+ cp -a third_party/fidelityfx "$T/third_party/"
+ cp -a third_party/a64-kit/* "$T/third_party/a64-kit/"
+ rm -f "$T/third_party/a64-kit/tools/lld-link.exe"
+-if [ -d work ]; then
++# Adventure builds must not package a developer's local work or game-derived profiles.
++if [ -d work ] && [ -z "${HOOKSHOT_ADVENTURE_PUBLISH:-}" ]; then
+     mkdir -p "$T/work/image"
+     for f in hot_funcs.txt hot_order.txt hookshot_pieces.prof hookshot_vk.profdata; do [ -f "work/$f" ] && cp "work/$f" "$T/work/"; done
+     [ -f work/image/chunks.txt ] && cp work/image/chunks.txt "$T/work/image/"
+@@ -103,7 +159,10 @@ for d in "$DEPS"/cpm/*/*; do
      mkdir -p "$T/cpm/${d#"$DEPS/cpm/"}"
      cp -a "$d/include" "$T/cpm/${d#"$DEPS/cpm/"}/"
  done
@@ -1365,7 +1375,7 @@ index 1d8ddfec..95903b71 100755
  # ---- the licences of the third-party parts compiled into hookshot_vk.so (tests/test_appimage_licenses.py) ----
  mkdir -p "$T/licenses/imgui" "$T/licenses/zstd" "$T/licenses/libertinus" "$T/licenses/fidelityfx" "$T/licenses/fidelityfx-sdk"
  cp third_party/imgui/LICENSE.txt third_party/imgui/PROVENANCE.md "$T/licenses/imgui/"
-@@ -200,11 +258,18 @@ EOF
+@@ -200,11 +259,18 @@ EOF
  # ---- the AppDir's own files ----
  cp builder/linux/AppRun "$APPDIR/AppRun"
  cp builder/linux/hookshot-builder.desktop "$APPDIR/"
@@ -1386,7 +1396,7 @@ index 1d8ddfec..95903b71 100755
  
  # (the update list, beside AppRun and not inside a hashed part: hookshot-linux.txt names each part's checksum)
  # (the parts are served from the linux-parts release of the repository this is built in, where
-@@ -223,7 +288,13 @@ UPDATE_INFO=${HOOKSHOT_UPDATE_INFO:-"zsync|https://git.notrexed.dev/$UPDATE_REPO
+@@ -223,7 +289,13 @@ UPDATE_INFO=${HOOKSHOT_UPDATE_INFO:-"zsync|https://git.notrexed.dev/$UPDATE_REPO
  OUT=$B/Hookshot-$VERSION-x86_64.AppImage
  rm -f "$OUT" "$OUT.zsync"
  # (from build-linux/: appimagetool writes the .zsync into the current folder)
@@ -1491,7 +1501,7 @@ index a94723bd..3af8f344 100644
  
      def test_vk_third_party_covered(self):
 diff --git a/tests/test_appimage_scripts.py b/tests/test_appimage_scripts.py
-index 7adea155..7e989302 100644
+index 7adea155..677058e3 100644
 --- a/tests/test_appimage_scripts.py
 +++ b/tests/test_appimage_scripts.py
 @@ -9,6 +9,7 @@ failed with FileNotFoundError on scripts/ngx_sdk.py.
@@ -1502,7 +1512,38 @@ index 7adea155..7e989302 100644
  import subprocess
  import sys
  import tempfile
-@@ -31,12 +32,149 @@ class AppImageScripts(unittest.TestCase):
+@@ -23,6 +24,30 @@ WANT = {
+ 
+ 
+ class AppImageScripts(unittest.TestCase):
++    @unittest.skipUnless(sys.platform.startswith("linux"), "the AppImage is made on Linux")
++    def test_adventure_does_not_ship_local_work(self):
++        script = (ROOT / "scripts/linux/appimage.sh").read_text(encoding="utf-8")
++        start = script.index("# Adventure builds must not package")
++        end = script.index("# (the pipeline state list's sources", start)
++        with tempfile.TemporaryDirectory(prefix="hookshot-adventure-private-work-") as folder:
++            root = Path(folder)
++            (root / "work/image").mkdir(parents=True)
++            (root / "work/hot_funcs.txt").write_text("private fixture", encoding="utf-8")
++            (root / "work/image/chunks.txt").write_text("private fixture", encoding="utf-8")
++            for adventure in (False, True):
++                target = root / ("adventure" if adventure else "stock")
++                target.mkdir()
++                env = dict(os.environ, T=str(target))
++                if adventure:
++                    env["HOOKSHOT_ADVENTURE_PUBLISH"] = "fixture"
++                else:
++                    env.pop("HOOKSHOT_ADVENTURE_PUBLISH", None)
++                result = subprocess.run(["bash", "-eu", "-o", "pipefail", "-c", script[start:end]],
++                                        cwd=root, env=env, capture_output=True, text=True)
++                self.assertEqual(result.returncode, 0, result.stderr)
++                self.assertEqual((target / "work/hot_funcs.txt").exists(), not adventure)
++                self.assertEqual((target / "work/image/chunks.txt").exists(), not adventure)
++
+     # (the AppImage is made on Linux; Windows runners have no usable bash for the script's block)
+     @unittest.skipUnless(sys.platform.startswith("linux"), "the AppImage is made on Linux")
+     def test_copied(self):
+@@ -31,12 +56,149 @@ class AppImageScripts(unittest.TestCase):
          end = script.index("cp -a third_party/opus", start)
          with tempfile.TemporaryDirectory(prefix="hookshot-appimage-scripts-") as folder:
              env = dict(os.environ, T=folder, VERSION="authored-test")
