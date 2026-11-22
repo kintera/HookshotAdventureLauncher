@@ -1185,7 +1185,7 @@ try
         (0x1AAFDB66, 1), (0x49D1C374, 0), (0x2BAD189A, 1), (0xC9220366, 1),
         (0x5E529AB9, 1), (0x40735A8D, 1), (0xBFB285C8, 1), (0xB796C16D, 1),
         (0x47F2CA87, 1), (0xF0828CD0, 1), (0xB7DF60F1, 0), (0x54E2A3D1, 1),
-        (0x8573D2CD, 0), (0x8499EA34, 1)
+        (0x8573D2CD, 0), (0x8499EA34, 1), (0x1240044B, 0), (0x4AEB140A, 1)
     };
     for (int i = 0; i < fields.Length; i++)
     {
@@ -1291,6 +1291,9 @@ try
     AssertTest.True(summary.Items.Single(x => x.Role == "slingshot").State == OwnershipState.Owned &&
                     summary.Items.Single(x => x.Role == "bow").State == OwnershipState.NotCarried, "ranged ownership uses stock rather than ammunition");
     AssertTest.True(summary.Items.Single(x => x.Role == "boomerang").State == OwnershipState.Unknown, "unmapped Boomerang stays unknown");
+    AssertTest.True(summary.Items.Single(x => x.Role == "scale_silver").State == OwnershipState.NotCarried &&
+        summary.Items.Single(x => x.Role == "scale_gold").State == OwnershipState.Owned,
+        "silver and golden scale ownership follows their saved stocks");
     AssertTest.True(new[] { "hammer", "boots_iron", "boots_hover", "fire_arrow", "ice_arrow", "light_arrow", "dins_fire", "farores_wind", "nayrus_love", "ocarina_time", "longshot" }
         .All(role => summary.Items.Single(x => x.Role == role).State == OwnershipState.Owned) &&
         new[] { "lens_of_truth", "ocarina_fairy", "hookshot" }.All(role => summary.Items.Single(x => x.Role == role).State == OwnershipState.NotCarried),

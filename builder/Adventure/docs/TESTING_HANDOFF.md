@@ -59,6 +59,9 @@ inodes; its startup reached shader preparation but gameplay was not checked.
   trade items, songs, magic, hearts and supported age changes.
   Adding a slingshot or bow in the editor also stages its basic seed bag or
   quiver when absent, preserving larger bags; the editor reports the addition.
+  The scale selector has authored save and UI coverage; a Golden Scale edited
+  into an isolated save loaded with its stock and acquisition flags set. Dive
+  depth and Silver Scale gameplay still need checking.
 
 Enable the launcher's Debug Key setting for an F9 trace when recording an
 unexpected event or reward. Include the seed, chosen settings, profile/slot,

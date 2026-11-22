@@ -973,7 +973,7 @@ index c9b22fef..4cb3d18e 100644
      PHASES.part("pipeline lists, icon and stamps")
      # (the game's code as read: written again by every build, so not left behind in the work folder. The translated code (sa\gen)
 diff --git a/nx2/saveedit/server.py b/nx2/saveedit/server.py
-index 7b4bda08..7061907c 100644
+index 7b4bda08..b2c917d0 100644
 --- a/nx2/saveedit/server.py
 +++ b/nx2/saveedit/server.py
 @@ -11,10 +11,12 @@ Close the game before saving: a running game writes over the save files when it
@@ -1087,7 +1087,7 @@ index 7b4bda08..7061907c 100644
      def item_state(self, item):
          e = self.slot.get(cat.stock(item))
          if e is None:
-@@ -491,6 +527,40 @@ class Editor:
+@@ -491,6 +527,41 @@ class Editor:
              self.give(x[0])
          return {**self.r_items(q), 'done': len(missing)}
  
@@ -1098,6 +1098,7 @@ index 7b4bda08..7061907c 100644
 +            'ocarina': ('Item_Ocarina_Fairy', 'Item_Ocarina_Time'),
 +            'hookshot': ('Item_Hookshot', 'Item_Longshot'),
 +            'strength': ('Armor_Child_Gauntlet_Goron', 'Armor_Adult_Gauntlet_Silver', 'Armor_Adult_Gauntlet_Gold'),
++            'scale': ('Item_Scale_Silver', 'Item_Scale_Gold'),
 +        }
 +        items = groups.get(q.get('group'))
 +        selected = q.get('item') or None
@@ -1128,7 +1129,7 @@ index 7b4bda08..7061907c 100644
      # -- progress flags and every entry
      def r_flags(self, q):
          self.need_slot()
-@@ -564,17 +634,21 @@ class Editor:
+@@ -564,17 +635,21 @@ class Editor:
      # -- writing
      def r_save(self, q):
          self.need_slot()
@@ -1964,7 +1965,7 @@ index 96643af2..2fe3863e 100644
  
  
 diff --git a/tests/test_saveedit.py b/tests/test_saveedit.py
-index 19627cfb..e8ffd995 100644
+index 19627cfb..29497393 100644
 --- a/tests/test_saveedit.py
 +++ b/tests/test_saveedit.py
 @@ -16,6 +16,7 @@ from pathlib import Path
@@ -1997,7 +1998,7 @@ index 19627cfb..e8ffd995 100644
  
  
  def main():
-@@ -81,6 +87,124 @@ def main():
+@@ -81,6 +87,135 @@ def main():
          assert by[nxsave.murmur3(b"PlayerStatus.Life")] == 11 and by[nxsave.murmur3(b"PlayerStatus.CurrentRupee")] == 150, by
          cap = {e.hash: e.value for e in nxsave.SaveFile(slot / "caption.sav").entries}
          assert cap[nxsave.murmur3(b"CaptionData.Life")] == 11 and cap[nxsave.murmur3(b"CaptionData.CurrentRupee")] == 150, cap
@@ -2014,6 +2015,8 @@ index 19627cfb..e8ffd995 100644
 +            ('PouchData.Item_Bomb.StockNum', 'Int', 0),
 +            ('PouchData.Item_Hookshot.StockNum', 'Int', 0), ('PouchData.Item_Longshot.StockNum', 'Int', 0),
 +            ('PouchData.Item_Ocarina_Fairy.StockNum', 'Int', 0), ('PouchData.Item_Ocarina_Time.StockNum', 'Int', 0),
++            ('PouchData.Item_Scale_Silver.StockNum', 'Int', 0), ('PouchData.Item_Scale_Gold.StockNum', 'Int', 0),
++            ('IsGet.Item_Scale_Gold', 'Bool', 0), ('HavePlayedGetEvent.Item_Scale_Gold', 'Bool', 0),
 +            ('PlayerStatus.EquipOcarina', 'String64', ''),
 +            ('PlayerStatus.MP', 'Int', 0), ('PlayerStatus.MPMax', 'Int', 0),
 +            ('PouchData.Item_FairyBless_MP.StockNum', 'Int', 0), ('PouchData.Item_FairyBless_MPDouble.StockNum', 'Int', 0),
@@ -2051,6 +2054,11 @@ index 19627cfb..e8ffd995 100644
 +        assert ask({'cmd': 'progressive', 'group': 'hookshot', 'item': 'Item_Longshot'})['ok']
 +        assert ask({'cmd': 'progressive', 'group': 'ocarina', 'item': 'Item_Ocarina_Fairy'})['ok']
 +        assert ask({'cmd': 'progressive', 'group': 'ocarina', 'item': 'Item_Ocarina_Time'})['ok']
++        assert ask({'cmd': 'progressive', 'group': 'scale', 'item': 'Item_Scale_Silver'})['ok']
++        assert ask({'cmd': 'progressive', 'group': 'scale', 'item': 'Item_Scale_Gold'})['ok']
++        assert ask({'cmd': 'progressive', 'group': 'scale', 'item': None})['ok']
++        assert ask({'cmd': 'progressive', 'group': 'scale', 'item': 'Item_Scale_Gold'})['ok']
++        assert not ask({'cmd': 'progressive', 'group': 'scale', 'item': 'Item_Boomerang'})['ok']
 +        bad = ask({'cmd': 'progressive', 'group': 'hookshot', 'item': 'Item_Boomerang'})
 +        assert not bad['ok']
 +        assert progress.read_bytes() == original, 'staged changes must not write the save'
@@ -2070,6 +2078,10 @@ index 19627cfb..e8ffd995 100644
 +        assert result[nxsave.murmur3(b'PlayerStatus.EquipOcarina')] == 'Item_Ocarina_Time'
 +        assert result[nxsave.murmur3(b'PouchData.Item_Ocarina_Time.StockNum')] == 1
 +        assert result[nxsave.murmur3(b'PouchData.Item_Ocarina_Fairy.StockNum')] == 0
++        assert result[nxsave.murmur3(b'PouchData.Item_Scale_Silver.StockNum')] == 0
++        assert result[nxsave.murmur3(b'PouchData.Item_Scale_Gold.StockNum')] == 1
++        assert result[nxsave.murmur3(b'IsGet.Item_Scale_Gold')] == 1
++        assert result[nxsave.murmur3(b'HavePlayedGetEvent.Item_Scale_Gold')] == 1
 +        assert result[nxsave.murmur3(b'IsGet.Item_Melody_TimeSong')] == 1
 +        assert result[nxsave.murmur3(b'IsGet.Item_Melody_EponaSong')] == 1
 +        assert result[nxsave.murmur3(b'HavePlayedGetEvent.Item_Melody_TimeSong')] == 1

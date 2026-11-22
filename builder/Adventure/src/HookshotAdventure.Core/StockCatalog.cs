@@ -33,6 +33,8 @@ public static class StockCatalog
         new("bracelet_goron", "Goron’s Bracelet", "Strength", 0xD1317941u, false),
         new("gauntlets_silver", "Silver Gauntlets", "Strength", 0x0012B8C0u, false),
         new("gauntlets_gold", "Golden Gauntlets", "Strength", 0x40AE1183u, false),
+        new("scale_silver", "Silver Scale", "Upgrades", 0x1240044Bu, false),
+        new("scale_gold", "Golden Scale", "Upgrades", 0x4AEB140Au, false),
         new("tunic_kokiri", "Kokiri Tunic", "Tunics", 0x84BA0D24u, false),
         new("tunic_goron", "Goron Tunic", "Tunics", 0x21ECBD19u, false),
         new("tunic_zora", "Zora Tunic", "Tunics", 0xB816AF94u, false),

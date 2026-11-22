@@ -143,6 +143,7 @@ public sealed class HAL_AdventureSummaryView : UserControl
             "progressive_ocarina" => new[] { "ocarina_fairy", "ocarina_time" },
             "progressive_hookshot" => new[] { "hookshot", "longshot" },
             "progressive_strength" => new[] { "bracelet_goron", "gauntlets_silver", "gauntlets_gold" },
+            "progressive_scale" => new[] { "scale_silver", "scale_gold" },
             _ => new[] { role }
         };
         for (var i = choices.Length - 1; i >= 0; i--)
@@ -459,6 +460,13 @@ public sealed class HAL_AdventureSummaryView : UserControl
         var passOwned = Owned("gerudo_pass");
         Label(c, "PASS", 731 - 27, 363, 90, 16, 10, true, Muted, TextAlignment.Center);
         Icon(c, "gerudo_pass", 731, 385, 36, passOwned, "Gerudo Membership Pass");
+        var scale = ResolveProgressive("progressive_scale");
+        var silverScale = Owned("scale_silver");
+        var goldScale = Owned("scale_gold");
+        bool? hasScale = silverScale == true || goldScale == true ? true :
+            silverScale == false && goldScale == false ? false : null;
+        Label(c, "SCALE", 800 - 27, 363, 90, 16, 10, true, Muted, TextAlignment.Center);
+        Icon(c, scale, 800, 385, 36, hasScale, scale == "scale_gold" ? "Golden Scale" : "Silver Scale", editRole: "progressive_scale");
         var trade = LatestTrade();
         Label(c, "TRADING QUEST", 869 - 32, 363, 100, 16, 10, true, Muted, TextAlignment.Center);
         Icon(c, trade ?? "trade_weird_egg", 869, 385, 36, trade is null ? null : true,

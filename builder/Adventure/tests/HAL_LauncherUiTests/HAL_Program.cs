@@ -95,7 +95,9 @@ internal static class HAL_Program
                 Items = new[] { new ItemState("slingshot", "Slingshot", "Gear", OwnershipState.NotCarried, false, "fixture"),
                     new ItemState("hammer", "Hammer", "Gear", OwnershipState.Owned, false, "fixture"),
                     new ItemState("lens_of_truth", "Lens", "Gear", OwnershipState.NotCarried, false, "fixture"),
-                    new ItemState("longshot", "Longshot", "Gear", OwnershipState.Owned, false, "fixture") }
+                    new ItemState("longshot", "Longshot", "Gear", OwnershipState.Owned, false, "fixture"),
+                    new ItemState("scale_silver", "Silver Scale", "Upgrades", OwnershipState.NotCarried, false, "fixture"),
+                    new ItemState("scale_gold", "Golden Scale", "Upgrades", OwnershipState.Owned, false, "fixture") }
             };
             suppliesView.UpdateVisual(supplies, null, ThemeCatalog.DefaultTheme); Pump();
             double SupplyOpacity(string role) => suppliesView.GetVisualDescendants().OfType<TextBlock>()
@@ -105,6 +107,9 @@ internal static class HAL_Program
             Check(SupplyOpacity("slingshot") == .13, "Seeds do not make an unowned slingshot appear owned");
             Check(SupplyOpacity("hammer") == 1 && SupplyOpacity("lens_of_truth") == .13 && SupplyOpacity("longshot") == 1,
                 "Equipment and progressive item icons use the saved ownership state");
+            Check(suppliesView.GetVisualDescendants().OfType<TextBlock>().Any(t =>
+                ToolTip.GetTip(t)?.ToString()?.StartsWith("Golden Scale · PNG", StringComparison.Ordinal) == true && t.Opacity == 1),
+                "Owned golden scale appears in the save summary");
             suppliesView.UpdateVisual(new SaveSummary { Supplies = new Dictionary<string, int?> {
                 ["nuts"] = 17, ["sticks"] = 1, ["beans"] = 1, ["bombs"] = 1, ["bombchus"] = 1, ["business_seeds"] = 1 },
                 Items = supplies.Items }, null, ThemeCatalog.DefaultTheme); Pump();
@@ -144,17 +149,19 @@ internal static class HAL_Program
             BinaryPrimitives.WriteUInt32LittleEndian(fixture.AsSpan(160), 0x07F10AAF); // pocket egg
             BinaryPrimitives.WriteUInt32LittleEndian(fixture.AsSpan(168), 0x12D63A97); // maximum magic
             BinaryPrimitives.WriteUInt32LittleEndian(fixture.AsSpan(176), 0x76B18200); // current magic
-            BinaryPrimitives.WriteUInt32LittleEndian(fixture.AsSpan(188), 20); // UInt table
-            BinaryPrimitives.WriteUInt32LittleEndian(fixture.AsSpan(192), 0x7D48DF76); // bottle content
-            BinaryPrimitives.WriteUInt32LittleEndian(fixture.AsSpan(196), 0xBE69DE49); // empty
-            BinaryPrimitives.WriteUInt32LittleEndian(fixture.AsSpan(208), 0x03B3450E); // Song of Time learned flag
-            BinaryPrimitives.WriteUInt32LittleEndian(fixture.AsSpan(216), 0x46080375); // child age
-            BinaryPrimitives.WriteUInt32LittleEndian(fixture.AsSpan(220), 1);
-            BinaryPrimitives.WriteUInt32LittleEndian(fixture.AsSpan(228), 16); // String64 table
-            BinaryPrimitives.WriteUInt32LittleEndian(fixture.AsSpan(232), 0x1D6189DA); // current map
-            BinaryPrimitives.WriteUInt32LittleEndian(fixture.AsSpan(236), 0x175D8);
-            BinaryPrimitives.WriteUInt32LittleEndian(fixture.AsSpan(240), 0xB72CD3FC); // equipped ocarina
-            BinaryPrimitives.WriteUInt32LittleEndian(fixture.AsSpan(244), 0x17618);
+            BinaryPrimitives.WriteUInt32LittleEndian(fixture.AsSpan(184), 0x1240044B); // silver scale
+            BinaryPrimitives.WriteUInt32LittleEndian(fixture.AsSpan(192), 0x4AEB140A); // golden scale
+            BinaryPrimitives.WriteUInt32LittleEndian(fixture.AsSpan(204), 20); // UInt table
+            BinaryPrimitives.WriteUInt32LittleEndian(fixture.AsSpan(208), 0x7D48DF76); // bottle content
+            BinaryPrimitives.WriteUInt32LittleEndian(fixture.AsSpan(212), 0xBE69DE49); // empty
+            BinaryPrimitives.WriteUInt32LittleEndian(fixture.AsSpan(224), 0x03B3450E); // Song of Time learned flag
+            BinaryPrimitives.WriteUInt32LittleEndian(fixture.AsSpan(232), 0x46080375); // child age
+            BinaryPrimitives.WriteUInt32LittleEndian(fixture.AsSpan(236), 1);
+            BinaryPrimitives.WriteUInt32LittleEndian(fixture.AsSpan(244), 16); // String64 table
+            BinaryPrimitives.WriteUInt32LittleEndian(fixture.AsSpan(248), 0x1D6189DA); // current map
+            BinaryPrimitives.WriteUInt32LittleEndian(fixture.AsSpan(252), 0x175D8);
+            BinaryPrimitives.WriteUInt32LittleEndian(fixture.AsSpan(256), 0xB72CD3FC); // equipped ocarina
+            BinaryPrimitives.WriteUInt32LittleEndian(fixture.AsSpan(260), 0x17618);
             System.Text.Encoding.UTF8.GetBytes("HyruleField_Child\0").CopyTo(fixture, 0x175D8);
             File.WriteAllBytes(editFile, fixture);
             using (var iconCache = new HAL_IconCacheService(null))
@@ -233,6 +240,16 @@ internal static class HAL_Program
                     .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 WaitFor(() => editView.EditOwnership?.Invoke("gauntlets_silver") == true);
                 Check(true, "Ocarina and strength use horizontal progression icons");
+                var scaleButton = editor.GetVisualDescendants().OfType<Button>().Single(b => b.Tag?.ToString() == "progressive_scale");
+                Check(Canvas.GetLeft(scaleButton) == 797 && Canvas.GetTop(scaleButton) == 382,
+                    "Scale edit slot sits under the Hylian Shield");
+                scaleButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Check(editor.GetVisualDescendants().OfType<Button>().Count(b => b.Tag?.ToString()?.StartsWith("choice:progressive_scale:") == true) == 3,
+                    "Scale menu offers none, silver and gold as icons");
+                editor.GetVisualDescendants().OfType<Button>().Single(b => b.Tag?.ToString() == "choice:progressive_scale:2")
+                    .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                WaitFor(() => editView.EditOwnership?.Invoke("scale_gold") == true);
+                Check(File.ReadAllBytes(editFile).SequenceEqual(fixture), "Scale choice is staged until saving");
                 editor.GetVisualDescendants().OfType<Button>().Single(b => b.Tag?.ToString() == "song_time")
                     .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 WaitFor(() => editView.EditOwnership?.Invoke("song_time") == true);
@@ -292,7 +309,10 @@ internal static class HAL_Program
                     .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 WaitFor(() => !File.ReadAllBytes(editFile).SequenceEqual(fixture));
                 var savedFixture = File.ReadAllBytes(editFile);
-                Check(BinaryPrimitives.ReadUInt32LittleEndian(savedFixture.AsSpan(220)) == 0 &&
+                Check(BinaryPrimitives.ReadUInt32LittleEndian(savedFixture.AsSpan(196)) == 1 &&
+                    BinaryPrimitives.ReadUInt32LittleEndian(savedFixture.AsSpan(188)) == 0,
+                    "Saving the golden scale persists the selected tier");
+                Check(BinaryPrimitives.ReadUInt32LittleEndian(savedFixture.AsSpan(236)) == 0 &&
                     System.Text.Encoding.UTF8.GetString(savedFixture.AsSpan(0x175D8, 17)) == "HyruleField_Adult",
                     "Saving age updates both Link and the outdoor map");
                 Check(BinaryPrimitives.ReadInt32LittleEndian(savedFixture.AsSpan(60)) == 1 &&
@@ -305,8 +325,8 @@ internal static class HAL_Program
                     BinaryPrimitives.ReadInt32LittleEndian(savedFixture.AsSpan(156)) == 0 &&
                     BinaryPrimitives.ReadInt32LittleEndian(savedFixture.AsSpan(164)) == 1 &&
                     BinaryPrimitives.ReadInt32LittleEndian(savedFixture.AsSpan(172)) == 240 &&
-                    BinaryPrimitives.ReadUInt32LittleEndian(savedFixture.AsSpan(212)) == 1 &&
-                    BinaryPrimitives.ReadUInt32LittleEndian(savedFixture.AsSpan(196)) == 0xEABA6067 &&
+                    BinaryPrimitives.ReadUInt32LittleEndian(savedFixture.AsSpan(228)) == 1 &&
+                    BinaryPrimitives.ReadUInt32LittleEndian(savedFixture.AsSpan(212)) == 0xEABA6067 &&
                     Directory.GetFiles(Path.Combine(fakeGame, "save-backups"), "progress.sav", SearchOption.AllDirectories).Length == 1,
                     "Saving an icon change writes the selected synthetic save and creates a backup");
                 editor.GetVisualDescendants().OfType<Button>().Single(b => b.Tag?.ToString() == "slingshot")

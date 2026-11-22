@@ -74,12 +74,14 @@ public sealed class HAL_SaveEditorSession : IDisposable
     private static readonly Dictionary<string, (string Label, string Id)[]> Progressions = new(StringComparer.Ordinal) {
         ["ocarina"] = new[] { ("Fairy Ocarina", "Item_Ocarina_Fairy"), ("Ocarina of Time", "Item_Ocarina_Time") },
         ["hookshot"] = new[] { ("Hookshot", "Item_Hookshot"), ("Longshot", "Item_Longshot") },
-        ["strength"] = new[] { ("Goron Bracelet", "Armor_Child_Gauntlet_Goron"), ("Silver Gauntlets", "Armor_Adult_Gauntlet_Silver"), ("Golden Gauntlets", "Armor_Adult_Gauntlet_Gold") }
+        ["strength"] = new[] { ("Goron Bracelet", "Armor_Child_Gauntlet_Goron"), ("Silver Gauntlets", "Armor_Adult_Gauntlet_Silver"), ("Golden Gauntlets", "Armor_Adult_Gauntlet_Gold") },
+        ["scale"] = new[] { ("Silver Scale", "Item_Scale_Silver"), ("Golden Scale", "Item_Scale_Gold") }
     };
     private static readonly Dictionary<string, string> ProgressionRoles = new(StringComparer.Ordinal) {
         ["ocarina_fairy"] = "Item_Ocarina_Fairy", ["ocarina_time"] = "Item_Ocarina_Time",
         ["hookshot"] = "Item_Hookshot", ["longshot"] = "Item_Longshot", ["bracelet_goron"] = "Armor_Child_Gauntlet_Goron",
-        ["gauntlets_silver"] = "Armor_Adult_Gauntlet_Silver", ["gauntlets_gold"] = "Armor_Adult_Gauntlet_Gold"
+        ["gauntlets_silver"] = "Armor_Adult_Gauntlet_Silver", ["gauntlets_gold"] = "Armor_Adult_Gauntlet_Gold",
+        ["scale_silver"] = "Item_Scale_Silver", ["scale_gold"] = "Item_Scale_Gold"
     };
     private static readonly Dictionary<string, string> AmountIds = new(StringComparer.Ordinal) {
         ["deku_sticks"] = "Item_DekuStick", ["deku_nuts"] = "Item_DekuNut", ["magic_bean"] = "Item_MagicBean",
@@ -263,6 +265,7 @@ public sealed class HAL_SaveEditorSession : IDisposable
             "ocarina" => new[] { "ocarina_fairy", "ocarina_time" },
             "hookshot" => new[] { "hookshot", "longshot" },
             "strength" => new[] { "bracelet_goron", "gauntlets_silver", "gauntlets_gold" },
+            "scale" => new[] { "scale_silver", "scale_gold" },
             _ => Array.Empty<string>()
         };
         _choiceIcons["progressive_" + group] = new[] { ("None", (string?)null) }
