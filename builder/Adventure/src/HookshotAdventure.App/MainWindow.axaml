@@ -218,7 +218,7 @@
               <WrapPanel x:Name="StartingSongsPanel" ItemWidth="220" Orientation="Horizontal"/>
               <TextBlock Text="Starting consumables (experimental)" FontWeight="SemiBold"/>
               <TextBlock x:Name="StartingConsumablesHelp" Classes="subtitle" Text="Counts are minimums granted once per new save. A starting slingshot includes a full 30-seed bag; sticks and nuts include a small bag, and bombs require Starting Bomb Bag." TextWrapping="Wrap"/>
-              <Grid ColumnDefinitions="Auto,90,Auto,90" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="6">
+              <Grid ColumnDefinitions="Auto,140,Auto,140" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="6">
                 <TextBlock Text="Sticks" VerticalAlignment="Center"/><NumericUpDown Grid.Column="1" x:Name="StartingSticksCount" Minimum="0" Maximum="10" Value="0" Increment="1"/>
                 <TextBlock Grid.Column="2" Text="Nuts" VerticalAlignment="Center"/><NumericUpDown Grid.Column="3" x:Name="StartingNutsCount" Minimum="0" Maximum="20" Value="0" Increment="1"/>
                 <TextBlock Grid.Row="1" Text="Seeds" VerticalAlignment="Center"/><NumericUpDown Grid.Row="1" Grid.Column="1" x:Name="StartingSeedsCount" Minimum="0" Maximum="30" Value="0" Increment="1"/>
@@ -704,6 +704,13 @@
                 <StackPanel Margin="12" Spacing="12">
                   <TextBlock FontSize="18" FontWeight="Bold" Text="Hookshot Adventure Launcher"/>
                   <TextBlock Classes="subtitle" TextWrapping="Wrap" Text="HAL helps you manage adventures and saves, customize your experience, and create experimental randomized adventures. Its randomizer is inspired by Ship of Harkinian."/>
+                  <Border Classes="panel" Padding="12">
+                    <StackPanel Spacing="7">
+                      <TextBlock x:Name="HAL_WhatsNewTitle" FontWeight="SemiBold" Text="What's new in 0.9.02a"/>
+                      <TextBlock Classes="subtitle" TextWrapping="Wrap" Text="Hookshot 3.0.2 support, updated ammo-chest rewards, bombchu capacity upgrades, clearer starting consumables, and automatic ASTC codec setup."/>
+                      <TextBlock Classes="subtitle" TextWrapping="Wrap" Text="The randomizer remains experimental. Rebuild Hookshot-Dev with HAL to apply its latest gameplay fixes."/>
+                    </StackPanel>
+                  </Border>
                   <Border Classes="panel" Padding="12">
                     <StackPanel Spacing="7">
                       <TextBlock FontWeight="SemiBold" Text="HAL project and community"/>

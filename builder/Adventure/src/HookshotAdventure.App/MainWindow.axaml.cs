@@ -265,9 +265,9 @@ public partial class MainWindow : Window
             else
             {
                 HookshotGame.CreatePlan(_preferences.Value.GameDirectory, candidate.UserDir);
-                var marker = Path.Combine(_preferences.Value.GameDirectory, "hookshot_randomizer_capability.txt");
-                var randomizerReady = File.Exists(marker) && !ProfileRepository.IsLink(marker) &&
-                    File.ReadAllText(marker).Trim() == "HOOKSHOT_DEV_RANDOMIZER=1";
+                var randomizerReady = false;
+                try { HAL_RandomizerSeedService.EnsureDevRandomizerBuild(_preferences.Value.GameDirectory); randomizerReady = true; }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or ArgumentException) { }
                 indicator.Text = randomizerReady ? "Ready to Play" : "Ready · Rando off";
                 indicator.Foreground = randomizerReady ? Avalonia.Media.Brushes.LightGreen : Avalonia.Media.Brushes.Goldenrod;
                 ToolTip.SetTip(indicator, randomizerReady
@@ -1482,10 +1482,9 @@ public partial class MainWindow : Window
     private void RefreshWarnings()
     {
         var gameDir = this.FindControl<TextBox>("GameDirectoryBox")?.Text ?? "";
-        var marker = Path.Combine(gameDir, "hookshot_randomizer_capability.txt");
         var capable = false;
-        try { capable = File.Exists(marker) && !ProfileRepository.IsLink(marker) && File.ReadAllText(marker).Trim() == "HOOKSHOT_DEV_RANDOMIZER=1"; }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+        try { HAL_RandomizerSeedService.EnsureDevRandomizerBuild(gameDir); capable = true; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or ArgumentException) { }
         var title = this.FindControl<TextBlock>("WarningTitle");
         var details = this.FindControl<TextBlock>("WarningDetails");
         var resolution = this.FindControl<TextBlock>("WarningResolution");
@@ -1493,7 +1492,7 @@ public partial class MainWindow : Window
         if (!capable)
         {
             title.Text = "Warning · Native randomizer build required";
-            details.Text = "The selected Hookshot-Dev installation does not have the native randomizer capability marker.";
+            details.Text = "The selected Hookshot-Dev installation needs current native randomizer and bombchu support.";
             resolution.Text = "Open Settings → Tools → Dev Build Setup, select your local game source, and build/update Hookshot-Dev with native randomizer support.";
         }
         else
@@ -1743,7 +1742,7 @@ public partial class MainWindow : Window
             var save = this.FindControl<Button>("HAL_SaveEditsButton")!;
             _HAL_editor = new HAL_SaveEditorSession(FindSourceRoot(), _preferences.Value.GameDirectory, _current.UserDir, slot,
                 _iconCache, _preferences.Value.Theme, this.FindControl<HAL_AdventureSummaryView>("SummaryView")!, status, save, selector,
-                this.FindControl<ComboBox>("HAL_EditAge")!);
+                this.FindControl<ComboBox>("HAL_EditAge")!, independentBombchus: _current.Kind == "randomizer");
             HAL_SetEditing(true);
             await _HAL_editor.Load();
         }
@@ -1941,6 +1940,7 @@ public partial class MainWindow : Window
         {
             var plan = HookshotGame.CreatePlan(_preferences.Value.GameDirectory, _current.UserDir);
             var profileDirectory = Path.GetDirectoryName(_current.UserDir)!;
+            var name = _current.Name;
             IReadOnlyDictionary<string, string>? randomizerEnvironment = _current.IsRandomized
                 ? HAL_RandomizerSeedService.PrepareLaunchEnvironment(_preferences.Value.GameDirectory, profileDirectory, _current.Id)
                 : _current.External ? null : HAL_DevRuntimeService.PrepareLaunchEnvironment(_preferences.Value.GameDirectory, _current.Id, null);
@@ -1948,9 +1948,14 @@ public partial class MainWindow : Window
                 HAL_EnhancementPreferences.Load(_preferences.Value.GameDirectory).FastText)
                 randomizerEnvironment = new Dictionary<string, string>(StringComparer.Ordinal) { ["HOS_TEXT_SPEED"] = "3" };
             if (!_current.External)
-                randomizerEnvironment = HAL_TunicCosmeticsService.PrepareLaunchEnvironment(
-                    _preferences.Value.GameDirectory, profileDirectory, _preferences.Value.TunicCosmetics, randomizerEnvironment);
-            var name = _current.Name;
+            {
+                Status("Preparing adventure patches…");
+                var gameDirectory = _preferences.Value.GameDirectory;
+                var cosmetics = _preferences.Value.TunicCosmetics;
+                var baseEnvironment = randomizerEnvironment;
+                randomizerEnvironment = await Task.Run(() => HAL_TunicCosmeticsService.PrepareLaunchEnvironment(
+                    gameDirectory, profileDirectory, cosmetics, baseEnvironment));
+            }
             var flags = (_preferences.Value.VideoDebug, _preferences.Value.HosDebug, _preferences.Value.A64Debug, _preferences.Value.DebugKey);
             Status("Checking Vulkan driver readiness…");
             var driverError = await HAL_VulkanReadiness.CheckAsync();

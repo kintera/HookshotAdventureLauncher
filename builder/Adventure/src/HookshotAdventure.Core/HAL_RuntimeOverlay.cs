@@ -27,7 +27,7 @@ public static class HAL_RuntimeOverlay
     public static IReadOnlyList<byte[]> Dictionaries(string romfs) =>
         HAL_Zstd.ReadDictionaryArchive(File.ReadAllBytes(SafePath(romfs, "Pack/ZsDic.pack.zs")));
 
-    public static string Prepare(string overlay, string gameDirectory, HAL_EnhancementPreferences preferences, bool experimentalAmmoGuard = false, bool independentBombchus = false)
+    public static string Prepare(string overlay, string gameDirectory, HAL_EnhancementPreferences preferences, bool experimentalAmmoGuard = false, bool independentBombchus = false, bool nativeAmmoGuard = false)
     {
         if (ProfileRepository.IsLink(overlay) || !Directory.Exists(overlay)) throw new InvalidDataException("Invalid seed overlay.");
         string romfs = Path.Combine(gameDirectory, "romfs"); var dictionaries = Dictionaries(romfs);
@@ -37,6 +37,7 @@ public static class HAL_RuntimeOverlay
         using var manifest = JsonDocument.Parse(manifestBytes); var metadata = manifest.RootElement;
         var files = new SortedDictionary<string, byte[]>(StringComparer.Ordinal);
         var sizes = new Dictionary<string, (long Original, long Patched)>(StringComparer.Ordinal);
+        var resourceAliases = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var item in metadata.GetProperty("output_hashes").EnumerateObject())
         {
             byte[] packed = Read(overlay, item.Name);
@@ -134,6 +135,31 @@ public static class HAL_RuntimeOverlay
         }
         if (independentBombchus)
             Patch(HAL_BombchuCapacity.Resource, HAL_BombchuCapacity.Patch);
+        if (nativeAmmoGuard && metadata.TryGetProperty("plan", out var ammoPlan))
+        {
+            var ammoRoutes = HAL_NativeAmmoChest.Routes(ammoPlan);
+            var largeActors = ammoRoutes.Values.SelectMany(x => x).Select(x => x.Actor)
+                .Where(x => x is "Obj_TBox_A_02" or "Obj_TBox_A_02_NoBake").Distinct(StringComparer.Ordinal).OrderBy(x => x, StringComparer.Ordinal).ToArray();
+            if (largeActors.Length != 0)
+            {
+                byte[] conditional = Unpack(Read(romfs, HAL_ConditionalLargeChest.Pack(HAL_ConditionalLargeChest.Conditional)));
+                foreach (string actor in largeActors)
+                {
+                    string alias = HAL_ConditionalLargeChest.Alias(actor), path = HAL_ConditionalLargeChest.Pack(alias), originalPath = HAL_ConditionalLargeChest.Pack(actor);
+                    if (files.ContainsKey(path) || File.Exists(SafePath(romfs, path))) throw new InvalidDataException("Private ammunition actor conflicts with an existing resource.");
+                    byte[] original = Unpack(Read(romfs, originalPath));
+                    byte[] expanded = HAL_ConditionalLargeChest.Build(original, conditional, actor);
+                    files.Add(path, HAL_Zstd.Compress(expanded)); resourceAliases.Add(path, originalPath); sizes.Add(path, (original.Length, expanded.Length));
+                }
+                foreach (string name in new[] { "ActorInfo", "GameActorInfo" })
+                {
+                    var additions = largeActors.Select(actor => new HAL_EventTableRow(HAL_ConditionalLargeChest.Alias(actor), actor, null)).ToArray();
+                    Patch("RSDB/" + name + ".Product.111.rstbl.byml.zs", raw => HAL_EventTablePatch.AddRows(raw, additions));
+                }
+            }
+            foreach (var (path, routes) in ammoRoutes)
+                Patch(path, raw => { foreach (var route in routes) raw = HAL_NativeAmmoChest.Patch(raw, route); return raw; });
+        }
         if (experimentalAmmoGuard)
         {
             var used = new SortedDictionary<string, (string Reward, bool Large)>(StringComparer.Ordinal);
@@ -175,7 +201,9 @@ public static class HAL_RuntimeOverlay
         string tablePath = Path.GetRelativePath(romfs, tables[0]).Replace('\\', '/');
         byte[] table = Unpack(Read(romfs, tablePath)); string prompts = Path.Combine(gameDirectory, "prompts", "rsizetable.zs");
         byte[]? extra = File.Exists(prompts) ? Unpack(File.ReadAllBytes(prompts)) : null;
-        files[tablePath] = HAL_Zstd.Compress(new HAL_ResourceSizeTable(table).Patch(sizes, extra));
+        byte[] mergedTable = new HAL_ResourceSizeTable(table).Patch(new Dictionary<string, (long, long)>(), extra);
+        if (resourceAliases.Count != 0) mergedTable = new HAL_ResourceSizeTable(mergedTable).CloneEntries(resourceAliases);
+        files[tablePath] = HAL_Zstd.Compress(new HAL_ResourceSizeTable(mergedTable).Patch(sizes));
         files["manifest.json"] = manifestBytes;
         var checksums = new JsonObject(); foreach (var (name, bytes) in files) checksums[name] = Hash(bytes);
         var starting = metadata.TryGetProperty("plan", out var plan) && plan.TryGetProperty("starting_inventory", out var inventory)
@@ -192,7 +220,8 @@ public static class HAL_RuntimeOverlay
             ["skip_first_owl"] = preferences.SkipFirstOwl, ["skip_castle_town_arrival"] = entrances,
             ["skip_hyrule_castle_intro"] = entrances || preferences.SkipFirstOwl, ["skip_kakariko_intro"] = entrances,
             ["skip_entrance_cutscenes"] = entrances, ["stone_reward_fallback"] = preferences.SkipDekuTreeClear,
-            ["experimental_ammo_guard"] = experimentalAmmoGuard, ["independent_bombchus"] = independentBombchus };
+            ["experimental_ammo_guard"] = experimentalAmmoGuard, ["independent_bombchus"] = independentBombchus,
+            ["native_small_chest_ammo_guard"] = nativeAmmoGuard, ["native_large_chest_ammo_guard"] = nativeAmmoGuard };
         if (preferences.SkipChildStealth)
         {
             string? seed = metadata.TryGetProperty("binding", out var binding) && binding.TryGetProperty("seed", out var seedValue) ? seedValue.GetString() : null;

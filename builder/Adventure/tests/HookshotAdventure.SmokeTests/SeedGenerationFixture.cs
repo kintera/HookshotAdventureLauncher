@@ -12,6 +12,7 @@ static class SeedGenerationFixture
         string gameData = Path.Combine(romfs, "GameData"), resource = Path.Combine(romfs, "System", "Resource");
         foreach (string dir in new[] { pack, region, gameData, resource, profile }) Directory.CreateDirectory(dir);
         File.WriteAllText(Path.Combine(game, "hookshot_randomizer_capability.txt"), "HOOKSHOT_DEV_RANDOMIZER=1\n");
+        File.WriteAllText(Path.Combine(game, "hookshot_bombchu_capacity_capability.txt"), "HOOKSHOT_BOMBCHU_CAPACITY=1\n");
         var prefs = new HAL_EnhancementPreferences(SkipOpening: false, SkipTutorialConversations: false, SkipDekuFirstEntrance: false, SkipDekuTreeMeeting: false, SkipKokiriSwordCutscene: false, SkipDekuTreeClear: false);
         HAL_EnhancementPreferences.Save(game, prefs);
         var archive = new byte[0x20]; BinaryPrimitives.WriteUInt32LittleEndian(archive.AsSpan(0x0c), 0x20);
@@ -56,10 +57,37 @@ static class SeedGenerationFixture
             "generated seed binds an excluded chest as a shuffled filler-only check");
         var env = HAL_RandomizerSeedService.PrepareLaunchEnvironment(game, profile, id);
         AssertTest.True(Directory.Exists(env["HOS_FS_OVERLAY"]), "C# seed preparation reloads the generated profile");
+        AssertTest.True(env["HOS_RANDO_BOMBCHU_CAPACITY"] == "1", "randomized launches enable dynamic bombchu capacity");
         using (var runtime = JsonDocument.Parse(File.ReadAllText(Path.Combine(env["HOS_FS_OVERLAY"], "runtime.json"))))
             AssertTest.True(runtime.RootElement.GetProperty("independent_bombchus").GetBoolean() &&
+                runtime.RootElement.GetProperty("native_small_chest_ammo_guard").GetBoolean() &&
                 File.Exists(Path.Combine(env["HOS_FS_OVERLAY"], HAL_BombchuCapacity.Resource.Replace('/', Path.DirectorySeparatorChar))),
-                "randomized launch composes an independent bombchu-capacity overlay");
+                "randomized launch composes bombchu capacity and small-chest ammo guards");
+        string guardOverlay = Path.Combine(test, "ammo-seed"), guardResource = Path.Combine(guardOverlay, map.Replace('/', Path.DirectorySeparatorChar));
+        Directory.CreateDirectory(Path.GetDirectoryName(guardResource)!);
+        byte[] baseMap = HAL_Zstd.Unpack(File.ReadAllBytes(Path.Combine(romfs, map.Replace('/', Path.DirectorySeparatorChar))), HAL_RuntimeOverlay.Dictionaries(romfs));
+        const ulong guardPlacement = 9725242744547055868UL;
+        var ammoEdit = new HAL_ChestAssignment(guardPlacement, "Obj_TBox_A_01", "TBox_Rupee_Blue", "KokiriForest_TreasureBox_NaviChatOff",
+            "TBox_ArrowBundle_Medium", "KokiriForest_TreasureBox_NaviChatOff", new[] { map });
+        byte[] seedMap = HAL_Zstd.Compress(HAL_ChestPatcher.Patch(baseMap, new[] { ammoEdit }));
+        File.WriteAllBytes(guardResource, seedMap);
+        string seedHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(seedMap)).ToLowerInvariant();
+        File.WriteAllText(Path.Combine(guardOverlay, "manifest.json"), JsonSerializer.Serialize(new
+        {
+            output_hashes = new Dictionary<string, string> { [map] = seedHash },
+            plan = new { assignments = new[] { new { placement = guardPlacement, actor = ammoEdit.Actor, reward = ammoEdit.Reward, resources = new[] { map } } } }
+        }));
+        byte[] seedManifest = File.ReadAllBytes(Path.Combine(guardOverlay, "manifest.json"));
+        string guarded = HAL_RuntimeOverlay.Prepare(guardOverlay, game, prefs, nativeAmmoGuard: true);
+        var guardedMap = new HAL_Byml(HAL_Zstd.Unpack(File.ReadAllBytes(Path.Combine(guarded, map.Replace('/', Path.DirectorySeparatorChar))), HAL_RuntimeOverlay.Dictionaries(romfs)));
+        var guardedActor = guardedMap.Array(guardedMap.Fields(guardedMap.Root)["Actors"]).Select(x => guardedMap.Fields((int)guardedMap.Child(x, 0xc1)))
+            .Single(x => x.TryGetValue("Hash", out var h) && guardedMap.UInt((int)guardedMap.Child(h, 0xd5), 8) == guardPlacement);
+        var guardedFields = guardedMap.Fields((int)guardedMap.Child(guardedActor["Dynamic"], 0xc1));
+        AssertTest.True(guardedMap.Text(guardedActor["Gyaml"]) == "Obj_TBox_A_06" &&
+            guardedMap.Text(guardedFields["Drop__DropActor_Substitute"]) == ammoEdit.Reward &&
+            guardedMap.Text(guardedFields["Drop__DropActor"]) == "TBox_Rupee_Blue" &&
+            File.ReadAllBytes(guardResource).SequenceEqual(seedMap) && File.ReadAllBytes(Path.Combine(guardOverlay, "manifest.json")).SequenceEqual(seedManifest),
+            "launch composition patches the assigned ammo chest while preserving the immutable seed and manifest");
         File.WriteAllText(Path.Combine(game, "hookshot_starting_inventory_capability.txt"), "HOOKSHOT_STARTING_INVENTORY=6\n");
         bool conflictRejected = false;
         try { HAL_ChestPlanner.Plan(new[] { new HAL_PlannerLocation("E89059B57059473A", 16757992849254467386UL,

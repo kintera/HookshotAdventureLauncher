@@ -1,14 +1,38 @@
 using System.Text;
+using System.Text.Json;
 
 namespace HookshotAdventure.Core;
 
-/// <summary>Experimental use of the game's conditional small chest for an ammunition reward.</summary>
+/// <summary>Use native conditional chest logic for randomized ammunition rewards.</summary>
 public static class HAL_NativeAmmoChest
 {
+    public static IReadOnlyDictionary<string, IReadOnlyList<HAL_AmmoChestRoute>> Routes(JsonElement plan)
+    {
+        var byResource = new SortedDictionary<string, List<HAL_AmmoChestRoute>>(StringComparer.Ordinal);
+        if (!plan.TryGetProperty("assignments", out var assignments)) return new Dictionary<string, IReadOnlyList<HAL_AmmoChestRoute>>();
+        foreach (var assignment in assignments.EnumerateArray())
+        {
+            string reward = assignment.GetProperty("reward").GetString() ?? throw new InvalidDataException("Missing chest reward.");
+            string actor = assignment.GetProperty("actor").GetString() ?? throw new InvalidDataException("Missing chest actor.");
+            if (HAL_AmmoGuardFlow.RequiredBags(reward) is null || actor is not ("Obj_TBox_A_01" or "Obj_TBox_A_01_NoBake" or "Obj_TBox_A_02" or "Obj_TBox_A_02_NoBake")) continue;
+            var route = new HAL_AmmoChestRoute(assignment.GetProperty("placement").GetUInt64(), actor, reward);
+            var resources = assignment.GetProperty("resources").EnumerateArray().Select(x => x.GetString() ?? "").ToArray();
+            if (resources.Length == 0 || resources.Any(string.IsNullOrEmpty) || resources.Distinct(StringComparer.Ordinal).Count() != resources.Length)
+                throw new InvalidDataException("Invalid ammunition chest resources.");
+            foreach (string resource in resources)
+            {
+                if (!byResource.TryGetValue(resource, out var routes)) byResource.Add(resource, routes = new());
+                if (routes.Any(x => x.Placement == route.Placement)) throw new InvalidDataException("Duplicate ammunition chest placement.");
+                routes.Add(route);
+            }
+        }
+        return byResource.ToDictionary(x => x.Key, x => (IReadOnlyList<HAL_AmmoChestRoute>)x.Value, StringComparer.Ordinal);
+    }
+
     public static byte[] Patch(byte[] source, HAL_AmmoChestRoute route)
     {
-        if (route.Actor is not ("Obj_TBox_A_01" or "Obj_TBox_A_01_NoBake"))
-            throw new InvalidDataException("The native conditional chest has only been prepared for ordinary small chests.");
+        if (route.Actor is not ("Obj_TBox_A_01" or "Obj_TBox_A_01_NoBake" or "Obj_TBox_A_02" or "Obj_TBox_A_02_NoBake"))
+            throw new InvalidDataException("Unsupported native conditional chest actor.");
         string check = route.Reward switch
         {
             "TBox_ArrowBundle_Medium" or "TBox_ArrowBundle_Large" or "Item_Arrow_Normal" => "Item_Quiver_Small",
@@ -16,7 +40,8 @@ public static class HAL_NativeAmmoChest
             "TBox_DekuSeedBundle" or "Item_DekuSeed" => "Item_BulletBag_Small",
             _ => throw new InvalidDataException("Unsupported ammunition reward.")
         };
-        string replacementActor = route.Actor.EndsWith("_NoBake", StringComparison.Ordinal) ? "Obj_TBox_A_06_NoBake" : "Obj_TBox_A_06";
+        string replacementActor = route.Actor.StartsWith("Obj_TBox_A_02", StringComparison.Ordinal) ? HAL_ConditionalLargeChest.Alias(route.Actor) :
+            route.Actor.EndsWith("_NoBake", StringComparison.Ordinal) ? "Obj_TBox_A_06_NoBake" : "Obj_TBox_A_06";
         byte[] data = HAL_BymlKeys.Ensure(HAL_BymlKeys.Ensure(source, "Drop__CheckActor"), "Drop__DropActor_Substitute");
         var b = new HAL_Byml(data); var root = b.Fields(b.Root);
         if (!root.TryGetValue("Actors", out var actors)) throw new InvalidDataException("Chest map has no actors.");

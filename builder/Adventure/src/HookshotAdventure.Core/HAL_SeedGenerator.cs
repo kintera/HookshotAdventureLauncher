@@ -193,6 +193,6 @@ public static class HAL_SeedGenerator
             ["source_hashes"] = JsonSerializer.SerializeToNode(hashes), ["metadata"] = metadata.DeepClone(), ["locations"] = checks,
             ["logic"] = plan["logic"]!.GetValue<string>() };
         record["content_hash"] = Digest(record); Write(Path.Combine(root, "seed.json"), record);
-        _ = HAL_RuntimeOverlay.Prepare(overlay, game, HAL_EnhancementPreferences.Load(game), independentBombchus: true);
+        _ = HAL_RuntimeOverlay.Prepare(overlay, game, HAL_EnhancementPreferences.Load(game), independentBombchus: true, nativeAmmoGuard: true);
     }
 }

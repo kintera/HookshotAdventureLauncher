@@ -2,6 +2,19 @@ using System.Buffers.Binary;
 using System.IO.Compression;
 using HookshotAdventure.Core;
 
+if (args.FirstOrDefault() == "--local-launch-overlay")
+{
+    if (args.Length != 4) throw new ArgumentException("Pass a local game directory, a copied profile directory, and preferences.json.");
+    string profile = Path.GetFullPath(args[2]);
+    var settings = System.Text.Json.JsonSerializer.Deserialize<AppPreferences>(File.ReadAllText(args[3])) ?? throw new InvalidDataException("Preferences missing.");
+    var seed = HAL_RandomizerSeedService.PrepareLaunchEnvironment(args[1], profile, Path.GetFileName(profile));
+    var combined = HAL_TunicCosmeticsService.PrepareLaunchEnvironment(args[1], profile, settings.TunicCosmetics, seed);
+    if (combined is null || !combined.TryGetValue("HOS_FS_OVERLAY", out var overlay) || !Directory.Exists(overlay))
+        throw new InvalidDataException("Combined runtime overlay was not prepared.");
+    Console.WriteLine("Randomizer and cosmetic launch patches prepared successfully in the copied profile.");
+    return;
+}
+
 if (args.FirstOrDefault() == "--logic-only")
 {
     ProgressionFixture.Check();
@@ -47,6 +60,8 @@ try
     bool midoRestricted = false; try { HAL_MidoExperiment.Prepare(Path.Combine(root,"not-dev")); } catch (InvalidDataException) { midoRestricted = true; }
     AssertTest.True(midoRestricted, "research Mido overlay refuses an unapproved development directory");
     BombchuCapacityFixture.Check();
+    ConditionalLargeChestFixture.Check();
+    HAL_AstcDownloadFixture.Check(root);
     HAL_HookshotDownloadFixture.Check(root);
     using (var itemCatalog = System.Text.Json.JsonDocument.Parse("{\"catalog_hash\":\"fixture\",\"locations\":[{\"id\":\"1\",\"reward\":\"Item_Dungeon_Map\",\"resources\":[\"Banc/InsideTheDekuTree/map\"],\"eligible\":false}]}"))
     {
@@ -514,6 +529,7 @@ try
         var arrowPatch = HAL_ChestPatcher.Patch(swordPatch, new[] { swordEdit with { ExpectedReward = "TBox_Rupee_Blue", ExpectedEvent = null,
             Reward = "TBox_ArrowBundle_Medium", Event = null } });
         var ammoRoute = new HAL_AmmoChestRoute(swordEdit.Placement, swordEdit.Actor, "TBox_ArrowBundle_Medium");
+        ConditionalLargeChestFixture.CheckRuntime(root, bytes, arrowPatch, bytes[0] == 'Y');
         var guardedMap = HAL_ChestScanner.Scan(HAL_AmmoChestRoutes.Patch(arrowPatch, new[] { ammoRoute }));
         AssertTest.True(guardedMap[2].Reward == ammoRoute.Reward && guardedMap[2].Event == HAL_AmmoChestRoutes.EventName(ammoRoute.Actor, ammoRoute.Reward) &&
             guardedMap[3].Event == HAL_ChestScanner.Scan(arrowPatch)[3].Event && HAL_ChestScanner.Scan(arrowPatch)[2].Event is null,
@@ -523,6 +539,38 @@ try
         catch (InvalidDataException) { guardedSpecial = true; }
         AssertTest.True(guardedSpecial, "ammo routing rejects changed rewards or existing special events");
         var smallArrow = HAL_ChestPatcher.Patch(bytes, new[] { edit with { Reward = "TBox_ArrowBundle_Medium" } });
+        using var ammoPlan = System.Text.Json.JsonDocument.Parse($$"""
+            {"assignments":[
+              {"placement":{{edit.Placement}},"actor":"Obj_TBox_A_01","reward":"TBox_ArrowBundle_Medium","resources":["map-a","map-b"]},
+              {"placement":{{swordEdit.Placement}},"actor":"Obj_TBox_A_02","reward":"Item_Bomb","resources":["map-a"]},
+              {"placement":1,"actor":"Obj_TBox_A_01","reward":"Item_Bombchu","resources":["map-a"]},
+              {"placement":2,"actor":"Obj_TBox_A_01","reward":"TBox_Rupee_Blue","resources":["map-a"]}
+            ]}
+            """);
+        var plannedAmmo = HAL_NativeAmmoChest.Routes(ammoPlan.RootElement);
+        AssertTest.True(plannedAmmo.Count == 2 && plannedAmmo["map-a"].Count == 2 && plannedAmmo["map-b"].Count == 1 &&
+            plannedAmmo["map-a"][0].Placement == edit.Placement && plannedAmmo["map-a"][1].Placement == swordEdit.Placement,
+            "native ammo routes assigned small and large chest ammunition in every map variant, leaving bombchus and other rewards alone");
+        using var duplicateAmmoPlan = System.Text.Json.JsonDocument.Parse($$"""
+            {"assignments":[
+              {"placement":{{edit.Placement}},"actor":"Obj_TBox_A_01","reward":"TBox_ArrowBundle_Medium","resources":["map-a"]},
+              {"placement":{{edit.Placement}},"actor":"Obj_TBox_A_01","reward":"Item_Bomb","resources":["map-a"]}
+            ]}
+            """);
+        bool duplicateAmmoRejected = false;
+        try { HAL_NativeAmmoChest.Routes(duplicateAmmoPlan.RootElement); } catch (InvalidDataException) { duplicateAmmoRejected = true; }
+        AssertTest.True(duplicateAmmoRejected, "native ammo routing rejects duplicate placements in a resource");
+        var largeNative = new HAL_Byml(HAL_NativeAmmoChest.Patch(arrowPatch, ammoRoute));
+        var largeNativeActor = largeNative.Array(largeNative.Fields(largeNative.Root)["Actors"])
+            .Select(x => largeNative.Fields((int)largeNative.Child(x, 0xc1)))
+            .Single(x => x.TryGetValue("Hash", out var h) && largeNative.UInt((int)largeNative.Child(h, 0xd5), 8) == swordEdit.Placement);
+        var largeNativeFields = largeNative.Fields((int)largeNative.Child(largeNativeActor["Dynamic"], 0xc1));
+        AssertTest.True(largeNative.Text(largeNativeActor["Gyaml"]) == HAL_ConditionalLargeChest.Regular &&
+            largeNative.Text(largeNativeFields["Drop__CheckActor"]) == "Item_Quiver_Small" &&
+            largeNative.Text(largeNativeFields["Drop__DropActor"]) == "TBox_Rupee_Blue" &&
+            largeNative.Text(largeNativeFields["Drop__DropActor_Substitute"]) == ammoRoute.Reward &&
+            HAL_ChestScanner.Scan(HAL_NativeAmmoChest.Patch(arrowPatch, ammoRoute))[3].Event == HAL_ChestScanner.Scan(arrowPatch)[3].Event,
+            "large-chest guard uses its private large actor, preserves a shared sibling and conditions its planned arrow reward");
         var nativeAmmo = HAL_NativeAmmoChest.Patch(smallArrow, new HAL_AmmoChestRoute(edit.Placement, edit.Actor, "TBox_ArrowBundle_Medium"));
         var nativeByml = new HAL_Byml(nativeAmmo);
         var nativeActor = nativeByml.Array(nativeByml.Fields(nativeByml.Root)["Actors"])
@@ -920,6 +968,7 @@ try
     AssertTest.True(!HAL_EnhancementPreferences.CanUse(initialOutput),
         "disabled development marker cannot enable skip preferences");
     File.WriteAllText(enhancementMarker, "HOOKSHOT_DEV_RANDOMIZER=1\n");
+    File.WriteAllText(Path.Combine(initialOutput, "hookshot_bombchu_capacity_capability.txt"), "HOOKSHOT_BOMBCHU_CAPACITY=1\n");
     AssertTest.True(HAL_EnhancementPreferences.CanUse(initialOutput + Path.DirectorySeparatorChar),
         "custom development installation supports skip preferences with a trailing separator");
     var customEnhancements = new HAL_EnhancementPreferences(SkipOpening: false, SkipBossIntroductions: true, FastText: true);
@@ -1219,6 +1268,11 @@ try
     catch (InvalidOperationException) { capabilityRequired = true; }
     AssertTest.True(capabilityRequired, "randomizer refuses a vanilla Hookshot build");
     File.WriteAllText(Path.Combine(built, "hookshot_randomizer_capability.txt"), "HOOKSHOT_DEV_RANDOMIZER=1\n");
+    bool bombchuCapabilityRequired = false;
+    try { HAL_RandomizerSeedService.EnsureDevRandomizerBuild(built); }
+    catch (InvalidOperationException) { bombchuCapabilityRequired = true; }
+    AssertTest.True(bombchuCapabilityRequired, "randomizer refuses an older build without the bombchu fix");
+    File.WriteAllText(Path.Combine(built, "hookshot_bombchu_capacity_capability.txt"), "HOOKSHOT_BOMBCHU_CAPACITY=1\n");
     HAL_RandomizerSeedService.EnsureDevRandomizerBuild(built);
     AssertTest.True(true, "development randomizer capability marker enables seed support");
     var processInfo = plan.ToStartInfo();
@@ -1242,12 +1296,21 @@ try
     var randoLaunch = plan.ToStartInfo(new Dictionary<string, string>
     {
         ["HOS_FS_OVERLAY"] = Path.Combine(root, "seed-overlay"),
+        ["HOS_RANDO_BOMBCHU_CAPACITY"] = "1",
         ["HOS_RANDO_STARTING_DUNGEON_FLAGS"] = "89787395",
         ["HOS_SKIP_OPENING"] = "1"
     });
     AssertTest.True(randoLaunch.Environment["HOS_FS_OVERLAY"] == Path.Combine(root, "seed-overlay") &&
+                    randoLaunch.Environment["HOS_RANDO_BOMBCHU_CAPACITY"] == "1" &&
                     randoLaunch.Environment["HOS_RANDO_STARTING_DUNGEON_FLAGS"] == "89787395" &&
                     randoLaunch.Environment["HOS_SKIP_OPENING"] == "1", "randomizer launch receives validated overlay switches and the saved intro-skip preference");
+    var inheritedBombchu = Environment.GetEnvironmentVariable("HOS_RANDO_BOMBCHU_CAPACITY");
+    try
+    {
+        Environment.SetEnvironmentVariable("HOS_RANDO_BOMBCHU_CAPACITY", "1");
+        AssertTest.True(!plan.ToStartInfo().Environment.ContainsKey("HOS_RANDO_BOMBCHU_CAPACITY"), "vanilla launches clear inherited bombchu randomizer behavior");
+    }
+    finally { Environment.SetEnvironmentVariable("HOS_RANDO_BOMBCHU_CAPACITY", inheritedBombchu); }
     AssertTest.True(plan.ToStartInfo(new HAL_EnhancementPreferences(FastText: true).RuntimeEnvironment()).Environment["HOS_TEXT_SPEED"] == "3",
         "fast text reaches the game process through the validated launch environment");
     bool blockedEnv = false;

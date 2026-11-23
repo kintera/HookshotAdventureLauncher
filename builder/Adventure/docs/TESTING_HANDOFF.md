@@ -71,22 +71,30 @@ collection behavior is established with gameplay evidence.
 
 ## Known incomplete controls
 
-**Bombchus:** randomized adventure runtime overlays use an independent fixed
-20-bombchu capacity without granting a bomb bag. In an isolated Kokiri Forest
-test, a bombchu chest granted five with no bomb bag; using one reduced the
-count to four, and a manual save reloaded with four and no bomb-bag capacity.
-Bomb-bag upgrades, larger bundles, and other hardware still need testing. The
-save editor's bombchu quantity control still uses the normal bomb-bag limit.
+**Bombchus:** randomized adventures have an independent minimum capacity of 20
+without granting a bomb bag, then follow the bag's 20/30/40 capacity. The
+launcher requires a runtime with the matching bombchu-capacity marker. The save
+editor uses the same rule and retains up to 20 when a bag is removed.
+In isolated headless 3.0.2 Kokiri Forest runs, debug grants reached 20, 20, 30,
+and 40 with bag capacities 0, 20, 30, and 40 respectively; extra grants stayed
+at the limit. A separate run started without a bag and used native inventory
+events to acquire medium and large bags: bombchus rose from 20 to 30 to 40,
+and the inventory displayed 40/40. A manual save reloaded with 40 bombchus.
+An earlier pre-fix chest test granted and saved bombchus with no bag. Actual
+chest pickups after upgrades, other operating systems and GPUs remain untested.
 
-**Ammo reward regression:** randomized chests can currently give arrows, bombs or
-seeds before the matching quiver, bomb bag or bullet bag is owned. The current
-chest planner treats those bundles as filler and does not check ownership at
-pickup time. The intended behavior is a rupee without the matching capacity,
-and the original ammo when the capacity is owned. This needs a runtime reward
-guard and in-game testing; changing only seed-time placement cannot distinguish
-whether the player acquires a bag before opening a chest. Existing generated
-seeds are immutable and are affected too. An experimental event-flow guard
-awarded a rupee but still displayed the arrow model, so it is not enabled.
+**Ammo reward regression:** randomized small and large chests now use a launch-time
+conditional reward: a blue rupee without the matching quiver, bomb bag or
+bullet bag, and the assigned ammo when the capacity is owned. The launcher
+applies this to a derived runtime overlay for new and existing seeds; it does
+not change the seed or unrelated chests. For large chests it creates a private
+conditional actor inheriting the original large chest's model and physics.
+Bombchus keep their independent capacity. In a visible 3.0.2 test with no
+quiver, the player first reproduced the unguarded arrow pickup from the large
+Kokiri Sword chest, then confirmed the guarded chest stayed large and gave a
+blue rupee. The integrated actor and registrations match the tested candidate.
+An experimental event-flow guard awarded a rupee but still
+displayed the arrow model, so it remains disabled.
 The game's Hylian Shield chest has a native conditional reward mechanism. In
 isolated tests, a small chest using that mechanism showed a blue rupee for
 arrows without a quiver, showed arrows with an editor-created quiver, and
@@ -96,9 +104,12 @@ saved five bombs, and a seed-bag-owned test saved five seeds. The no-bag seed
 test and the bow-without-quiver test each showed and saved five rupees. The
 seed-bag save reloaded with five seeds and its chest still open; an
 editor-created largest seed bag also retained five seeds. Other reloads,
-bags upgraded through gameplay and large
-chests still need testing. The native conditional patch is experimental and is
-not wired into ordinary launches; do not assume the regression is fixed.
+bags upgraded through gameplay still need testing. The small-chest game runs
+used the experimental 3.0.0 overlay; the 3.0.2 large-chest no-quiver test used
+the private-actor candidate. The 3.0.2 launch integration has been checked
+against a copied existing seed and synthetic fixtures. Large-chest quiver-owned
+pickups, save/reload, other ammo types, the no-bake variant and other hardware
+still need in-game tests.
 
 **Deku meeting journal:** skipping the meeting previously bypassed the game's
 `Meet_DekuTree` completion and `Get_StoneOfForest` start actions. The updated

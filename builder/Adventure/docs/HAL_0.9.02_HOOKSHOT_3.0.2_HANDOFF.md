@@ -1,5 +1,7 @@
 # HAL 0.9.02: Hookshot 3.0.2 port handoff
 
+> Historical planning document: the 3.0.2 port was subsequently implemented for 0.9.02a. For current results and remaining validation, use [TESTING_HANDOFF.md](TESTING_HANDOFF.md).
+
 ## Objective and starting point
 
 Port the released HAL 0.9.01 alpha launcher, randomizer, save editor and native integration to Hookshot 3.0.2. Call the next HAL build **0.9.02**. This document is a handoff for the next work session; the port has **not** been performed or validated yet.

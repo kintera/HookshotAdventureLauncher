@@ -7,11 +7,12 @@ namespace HookshotAdventure.Core;
 /// <summary>Runs the local ASTC codec on temporary images and validates dimensions.</summary>
 public static class HAL_AstcCodec
 {
-    public static string Find(string root, string? applicationDirectory = null)
+    public static string Find(string root, string? applicationDirectory = null, bool includeCache = true)
     {
         string executable = OperatingSystem.IsWindows() ? "astcenc-sse2.exe" : "astcenc-sse2";
         var candidates = new List<string?> { Environment.GetEnvironmentVariable("HOOKSHOT_ASTCENC"),
             Path.Combine(applicationDirectory ?? AppContext.BaseDirectory, executable), Path.Combine(root, "work", "tools", "astcenc", executable) };
+        if (includeCache) candidates.Add(Path.Combine(HAL_AstcDownload.CacheDirectory, executable));
         foreach (string directory in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
             foreach (string name in OperatingSystem.IsWindows() ? new[] { "astcenc.exe", "astcenc-sse2.exe" } : new[] { "astcenc", "astcenc-sse2" })
                 candidates.Add(Path.Combine(directory, name));

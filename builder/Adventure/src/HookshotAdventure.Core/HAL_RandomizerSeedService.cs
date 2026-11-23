@@ -66,6 +66,9 @@ public static class HAL_RandomizerSeedService
         if (!File.Exists(marker) || ProfileRepository.IsLink(marker) ||
             File.ReadAllText(marker).Trim() != "HOOKSHOT_DEV_RANDOMIZER=1")
             throw new InvalidOperationException("Randomizer gameplay requires a Hookshot development build compiled with HOOKSHOT_DEV_RANDOMIZER=1.");
+        var bombchu = Path.Combine(Path.GetFullPath(gameDirectory), "hookshot_bombchu_capacity_capability.txt");
+        if (!File.Exists(bombchu) || ProfileRepository.IsLink(bombchu) || File.ReadAllText(bombchu).Trim() != "HOOKSHOT_BOMBCHU_CAPACITY=1")
+            throw new InvalidOperationException("Randomizer gameplay needs an updated Hookshot-Dev build for bombchu capacity. Rebuild it in Dev Build Setup.");
     }
 
     public static void Generate(string gameDirectory, string profileDirectory, string profileId,
@@ -137,7 +140,7 @@ public static class HAL_RandomizerSeedService
         var result = new SeedResult
         {
             Seed = record.GetProperty("seed").GetString()!,
-            Overlay = HAL_RuntimeOverlay.Prepare(seedOverlay, game, enhancements with { SkipChildStealth = childStealth }, independentBombchus: true),
+            Overlay = HAL_RuntimeOverlay.Prepare(seedOverlay, game, enhancements with { SkipChildStealth = childStealth }, independentBombchus: true, nativeAmmoGuard: true),
             StartingDungeonFlags = HAL_StartingDungeonFlags.Resolve(startingItems.Where(x => x.Item is "Item_Dungeon_Map" or "Item_Dungeon_Compass"), startingMaps).ToList(),
             StartingEquipment = equipment,
             StartingSongs = startingSongs,
@@ -157,7 +160,8 @@ public static class HAL_RandomizerSeedService
             throw new InvalidDataException("Randomizer starting-item list is invalid.");
         var environment = new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            ["HOS_FS_OVERLAY"] = Path.GetFullPath(result.Overlay)
+            ["HOS_FS_OVERLAY"] = Path.GetFullPath(result.Overlay),
+            ["HOS_RANDO_BOMBCHU_CAPACITY"] = "1"
         };
         // Gameplay skips live in the Hookshot-Dev enhancement preferences, not
         // in the seed manifest. Apply them to randomized launches explicitly.

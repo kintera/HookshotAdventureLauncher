@@ -2,13 +2,21 @@
 
 # Hookshot Adventure Launcher
 
-**Version 0.9.01 alpha.1 · C# / .NET / Avalonia**
+**Version 0.9.02a · C# / .NET / Avalonia**
 
 Hookshot Adventure Launcher brings profiles, save management, an in-place save editor, experimental randomizer settings, and visual customization together in one interface for Hookshot. Choose an adventure, review a save, and launch it from a desktop or Steam Deck-sized window.
 
-> **0.9.01 alpha:** This is for testing, not a finished randomizer or a game download. Some checks and event rewards remain vanilla, full-game beatability is not established, and several features still need gameplay testing. Back up important saves before experimenting.
+> **0.9.02a alpha:** This is for testing, not a finished randomizer or a game download. Some checks and event rewards remain vanilla, full-game beatability is not established, and several features still need gameplay testing. Back up important saves before experimenting.
 
-The default branch contains the 0.9.01 alpha source. The earlier v0.8 source is retained on the `release/v0.8` branch and under `builder/qt/`.
+The default branch contains the 0.9.02a source for Hookshot 3.0.2. The earlier v0.8 source is retained on the `release/v0.8` branch and under `builder/qt/`.
+
+## What's new in 0.9.02a
+
+- Supports Hookshot 3.0.2 with the 0.9.01 guided development-build setup and launcher features.
+- Randomized ammo chests use a blue rupee when the matching bag is missing. Large chests keep their size; more chest variants and bag-owned cases still need gameplay testing.
+- Bombchus hold 20 before a bomb bag is found, then match the bag's 20, 30, or 40 capacity. The save editor follows the same rule.
+- Improves starting-consumable visibility and automatically locates or obtains the ASTC codec needed for cosmetic patches.
+- Includes the Hookshot 3.0.2 moving-roll input fix and an updated development launcher script.
 
 [Set up the launcher](#setup) · [Save editor](#save-editor) · [Randomizer](#randomizer) · [Enhancements](#enhancements) · [Themes](#themes) · [Testing and limitations](#testing-and-limitations) · [Report an issue](#reporting-an-issue)
 
@@ -41,11 +49,11 @@ The randomizer is being developed around [Ship of Harkinian's randomizer](https:
 
 Create a randomized adventure with a profile-bound seed and configure the next seed from **Randomizer**. Existing seeds keep their recorded settings. The launcher scans the player's local game files for supported chest locations and lets players mark individual checks as filler-only. It also provides starting equipment, songs, consumables, and maps/compasses; supported chest sources for starting items are replaced with blue rupees.
 
-Reviewed heart-piece chests and limited Saria, Lost Woods target, and one-time Skulltula House reward exchanges are experimental. Open Forest and Open Deku options are also experimental. The Skulltula maximum is stored as a preference but **is not enforced by the solver**. Randomized adventures use a separate 20-bombchu capacity without granting a bomb bag.
+Reviewed heart-piece chests and limited Saria, Lost Woods target, and one-time Skulltula House reward exchanges are experimental. Open Forest and Open Deku options are also experimental. The Skulltula maximum is stored as a preference but **is not enforced by the solver**. Randomized adventures hold 20 bombchus before a bomb bag, then follow the bag's 20, 30, or 40 capacity.
 
 ![Randomizer shuffle options](docs/screenshots/0.9.01-randomizer.png)
 
-The opening logic has checks, but the solver does not prove a full game is beatable. Event reward coverage is partial, and ammunition chests can still give arrows, bombs, or seeds before the corresponding bag is owned. Song, shop, and scrub shuffles and several other features are not implemented. See the [testing handoff](builder/Adventure/docs/TESTING_HANDOFF.md) before starting a test seed.
+The opening logic has checks, but the solver does not prove a full game is beatable. Event reward coverage is partial, and the conditional ammo-chest behavior still needs testing across more chest variants and bag-owned cases. Song, shop, and scrub shuffles and several other features are not implemented. See the [testing handoff](builder/Adventure/docs/TESTING_HANDOFF.md) before starting a test seed.
 
 ## Enhancements
 
@@ -71,9 +79,9 @@ The launcher also provides settings for game launches, shader and pipeline tools
 
 ## Download and setup
 
-[Download 0.9.01 alpha.1](https://github.com/kintera/HookshotAdventureLauncher/releases/tag/v0.9.01-alpha.1)
+[Download 0.9.02a](https://github.com/kintera/HookshotAdventureLauncher/releases/tag/v0.9.02a)
 
-- **Linux x86-64:** Download the AppImage, make it executable (`chmod +x HookshotAdventure-0.9.01-alpha.1-Linux-x86_64.AppImage`), then run it. HAL updates are manual in this alpha.
+- **Linux x86-64:** Download the AppImage, make it executable (`chmod +x HookshotAdventure-0.9.02a-Linux-x86_64.AppImage`), then run it. HAL updates are manual in this alpha.
 - **Windows x86-64 (experimental):** Download and extract the experimental ZIP, then run `HookshotAdventure.App.exe`. The launcher has been cross-built but has not yet been tested on Windows. Building Hookshot-Dev requires additional Windows build tools; see the included `READ-ME-FIRST.txt` and `CONTRIBUTING.md`.
 
 When a randomized adventure needs a compatible build, choose **Set up randomizer build**. HAL guides you through selecting your game files and building a separate Hookshot-Dev installation, with a progress bar and live log. Windows build prerequisites are required separately.
@@ -84,11 +92,11 @@ Both packages require your own compatible game files; neither contains a game du
 
 This repository contains launcher source and a version-specific integration patch; it does **not** contain the native Hookshot source tree, a built game, or game files. The source setup below targets Linux and requires the .NET 10 SDK, Git, and Hookshot's own build requirements.
 
-1. Obtain a fresh Hookshot v3.0.0 source checkout at the supported revision, along with your own compatible game files:
+1. Obtain a fresh Hookshot v3.0.2 source checkout at the supported revision, along with your own compatible game files:
 
    ```sh
-   git clone https://git.notrexed.dev/Hookshot/Hookshot.git Hookshot-v3.0.0
-   git -C Hookshot-v3.0.0 checkout 29619a1cdc9d15e450761600f4e8adc0ba14e23e
+   git clone https://git.notrexed.dev/Hookshot/Hookshot.git Hookshot-v3.0.2
+   git -C Hookshot-v3.0.2 checkout a2b7f97976bb8538d6c7d5a4d01a05606c8d0cff
    ```
 
 2. Check out this launcher source and apply its integration to the fresh Hookshot checkout:
@@ -96,7 +104,7 @@ This repository contains launcher source and a version-specific integration patc
    ```sh
    git clone https://github.com/kintera/HookshotAdventureLauncher.git
    cd HookshotAdventureLauncher
-   ./install-into-hookshot.sh /path/to/Hookshot-v3.0.0
+   ./install-into-hookshot.sh /path/to/Hookshot-v3.0.2
    ```
 
    The installer checks that the patch applies and refuses to overwrite an existing Adventure installation. Use a separate checkout for testing.
@@ -123,16 +131,16 @@ builder/Adventure/src/HookshotAdventure.Core/  Profiles, randomizer, and shared 
 builder/Adventure/src/HookshotAdventure.Cli/   Local research and resource tools
 builder/Adventure/tests/                       Game-free launcher tests
 builder/Adventure/docs/                        Design and testing notes
-integration/hookshot-v3.0.0.patch               Version-specific native integration
+integration/hookshot-v3.0.2.patch               Version-specific native integration
 install-into-hookshot.sh                       Checked integration installer
 builder/qt/                                    Earlier v0.8 launcher source
 ```
 
 ## Testing and limitations
 
-Run `./hookshot-dev.sh --test` from the integrated Hookshot checkout for the C# core smoke tests. The [testing handoff](builder/Adventure/docs/TESTING_HANDOFF.md) records known issues and gameplay scenarios; game-free tests do not establish compatibility or beatability. The original v0.8 source remains in `builder/qt/` for reference. Release notes are in [0.9.01 alpha.1](docs/RELEASE_0.9.01_ALPHA1.md) and [0.9.01 alpha](docs/RELEASE_0.9.01.md), and the [earlier release notes](docs/RELEASE_NOTES.md) remain available.
+Run `./hookshot-dev.sh --test` from the integrated Hookshot checkout for the C# core smoke tests. The [testing handoff](builder/Adventure/docs/TESTING_HANDOFF.md) records known issues and gameplay scenarios; game-free tests do not establish compatibility or beatability. The original v0.8 source remains in `builder/qt/` for reference. Read the [0.9.02a release notes](docs/RELEASE_0.9.02a.md); notes for [0.9.01 alpha.1](docs/RELEASE_0.9.01_ALPHA1.md), [0.9.01 alpha](docs/RELEASE_0.9.01.md), and [earlier releases](docs/RELEASE_NOTES.md) remain available.
 
-For the planned Hookshot 3.0.2 port, see the [HAL 0.9.02 handoff](builder/Adventure/docs/HAL_0.9.02_HOOKSHOT_3.0.2_HANDOFF.md).
+For the original port plan, see the [HAL 0.9.02 handoff](builder/Adventure/docs/HAL_0.9.02_HOOKSHOT_3.0.2_HANDOFF.md). Current results and remaining checks are in the [testing handoff](builder/Adventure/docs/TESTING_HANDOFF.md).
 
 
 ## Reporting an issue

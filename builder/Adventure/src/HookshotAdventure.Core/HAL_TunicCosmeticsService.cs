@@ -10,7 +10,7 @@ public static class HAL_TunicCosmeticsService
             new Dictionary<string, string>(existing, StringComparer.Ordinal);
         if (!settings.Enabled) return existing;
         var root = FindSourceRoot();
-        var codec = HAL_AstcCodec.Find(root);
+        var codec = HAL_AstcDownload.EnsureAsync(root).GetAwaiter().GetResult();
         env.TryGetValue("HOS_FS_OVERLAY", out var baseOverlay);
         var overlay = HAL_CosmeticOverlay.Prepare(gameDirectory, profileDirectory, settings, baseOverlay, codec);
         if (!Directory.Exists(overlay) || ProfileRepository.IsLink(overlay))
@@ -29,6 +29,7 @@ public static class HAL_TunicCosmeticsService
                 current = current.Parent;
             }
         }
-        throw new InvalidOperationException("Tunic texture preparation requires the Hookshot source checkout.");
+        // A packaged launcher may have a bundled codec without a source checkout.
+        return AppContext.BaseDirectory;
     }
 }

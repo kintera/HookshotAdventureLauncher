@@ -166,7 +166,7 @@ public sealed class HAL_InstallView : UserControl
             try
             {
                 using var client = new HttpClient { Timeout = TimeSpan.FromMinutes(20) };
-                client.DefaultRequestHeaders.UserAgent.ParseAdd("HookshotAdventureLauncher/0.9.01");
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("HookshotAdventureLauncher/0.9.02");
                 downloadStatus.Text = "Checking the official Hookshot release…";
                 var asset = await HAL_HookshotDownload.LatestAsync(client, OperatingSystem.IsWindows(), cancellation.Token);
                 var file = await owner.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions

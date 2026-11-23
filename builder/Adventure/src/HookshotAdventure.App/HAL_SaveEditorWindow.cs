@@ -92,7 +92,8 @@ public sealed class HAL_SaveEditorSession : IDisposable
     };
 
     public HAL_SaveEditorSession(string root, string game, string user, SaveSummary slot, HAL_IconCacheService icons, string theme,
-        HAL_AdventureSummaryView view, TextBlock status, Button save, ContentControl selector, ComboBox? agePicker = null)
+        HAL_AdventureSummaryView view, TextBlock status, Button save, ContentControl selector, ComboBox? agePicker = null,
+        bool independentBombchus = false)
     {
         _summary = slot; _icons = icons; _theme = theme; _view = view; _status = status; _save = save; _selector = selector;
         _agePicker = agePicker;
@@ -115,6 +116,7 @@ public sealed class HAL_SaveEditorSession : IDisposable
         };
         info.ArgumentList.Add("-I"); info.ArgumentList.Add(script); info.ArgumentList.Add("--game"); info.ArgumentList.Add(game);
         info.ArgumentList.Add("--user"); info.ArgumentList.Add(user);
+        if (independentBombchus) info.ArgumentList.Add("--independent-bombchus");
         HAL_LinuxBuildTools.HAL_ConfigureBuild(info, root);
         _process = Process.Start(info) ?? throw new InvalidOperationException("Could not start the save editor.");
         _process.ErrorDataReceived += (_, _) => { }; _process.BeginErrorReadLine();

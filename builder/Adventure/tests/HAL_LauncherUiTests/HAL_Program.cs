@@ -600,6 +600,8 @@ internal static class HAL_Program
             Pump();
             settingsSections.SelectedItem = window.FindControl<TabItem>("HAL_InformationTab");
             Pump();
+            Check(window.FindControl<TextBlock>("HAL_WhatsNewTitle")?.Text == "What's new in 0.9.02a",
+                "Information includes the current release's What's New section");
             Check(window.FindControl<Button>("HAL_InformationGitHub") is { IsEffectivelyVisible: true } &&
                   window.FindControl<Button>("HAL_InformationDiscord") is { IsEffectivelyVisible: true } &&
                   window.FindControl<Button>("HAL_InformationHookshot") is { IsEffectivelyVisible: true },
@@ -839,6 +841,7 @@ internal static class HAL_Program
                 sariaShuffle.Content!.ToString()!.Contains("experimental") && skullShuffle.Content!.ToString()!.Contains("experimental"),
                 "Saria and Skulltula reward exchanges are selectable and marked experimental");
             File.WriteAllText(Path.Combine(fakeGame, "hookshot_randomizer_capability.txt"), "HOOKSHOT_DEV_RANDOMIZER=1\n");
+            File.WriteAllText(Path.Combine(fakeGame, "hookshot_bombchu_capacity_capability.txt"), "HOOKSHOT_BOMBCHU_CAPACITY=1\n");
             preferences.Value.GameDirectory = fakeGame;
             typeof(MainWindow).GetMethod("LoadEnhancementSettings", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.Invoke(window, null);
             var fastText = window.FindControl<CheckBox>("RandomizerFastTextCheck")!;
@@ -1226,6 +1229,7 @@ internal static class HAL_Program
         File.WriteAllText(HookshotGame.ResolveExecutable(staged), "executable");
         File.WriteAllText(Path.Combine(staged, "image.bin"), "image");
         File.WriteAllText(Path.Combine(staged, "hookshot_randomizer_capability.txt"), "HOOKSHOT_DEV_RANDOMIZER=1");
+        File.WriteAllText(Path.Combine(staged, "hookshot_bombchu_capacity_capability.txt"), "HOOKSHOT_BOMBCHU_CAPACITY=1");
         File.WriteAllText(Path.Combine(staged, "logs", "build.log"), "staging log");
         File.WriteAllText(Path.Combine(output, "logs", "existing.log"), "keep this log");
         var plan = new HAL_DevelopmentBuild(root, output, staged, false, new System.Diagnostics.ProcessStartInfo(), "", null);
